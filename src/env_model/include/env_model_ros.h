@@ -25,6 +25,10 @@ class EnvModelROS
         EnvModelROS();
 
         ~EnvModelROS(){};
+
+
+
+  
     private:
         
         rclcpp::Node::SharedPtr n;
@@ -44,8 +48,6 @@ class EnvModelROS
         
         EnvModelLoader *m;
         BaseEnvModel* MyEnv;
-
-
 
         bool getPosCallback(
             const std::shared_ptr<env_model_msgs::srv::IntToFloat::Request> req,
