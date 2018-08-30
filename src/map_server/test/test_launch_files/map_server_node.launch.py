@@ -22,5 +22,6 @@ def generate_launch_description():
         launch_ros.actions.Node(
             package='map_server',
             node_executable='map_server',
-            output='screen')
+            output='screen',
+            arguments = ['/home/brian/ros2_overlay_ws/src/navigation2/src/map_server/test/testmap.yaml'])
 ])
