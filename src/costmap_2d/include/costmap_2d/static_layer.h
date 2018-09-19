@@ -38,13 +38,13 @@
 #ifndef COSTMAP_2D_STATIC_LAYER_H_
 #define COSTMAP_2D_STATIC_LAYER_H_
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.h>
 #include <costmap_2d/costmap_layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <map_msgs/OccupancyGridUpdate.h>
+#include <nav_msgs/msg/occupancy_grid.h>
+#include <map_msgs/msg/occupancy_grid_update.h>
 #include <message_filters/subscriber.h>
 
 namespace costmap_2d
@@ -90,10 +90,10 @@ private:
   bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing
   bool trinary_costmap_;
   ros::Subscriber map_sub_, map_update_sub_;
-
+rclcpp::subscription<>
   unsigned char lethal_threshold_, unknown_cost_value_;
 
-  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
+//  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 };
 
 }  // namespace costmap_2d

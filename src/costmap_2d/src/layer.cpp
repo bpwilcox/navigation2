@@ -40,7 +40,7 @@ Layer::Layer()
   , tf_(NULL)
 {}
 
-void Layer::initialize(LayeredCostmap* parent, std::string name, tf::TransformListener *tf)
+void Layer::initialize(LayeredCostmap* parent, std::string name, tf2_ros::TransformListener *tf)
 {
   layered_costmap_ = parent;
   name_ = name;
@@ -48,7 +48,7 @@ void Layer::initialize(LayeredCostmap* parent, std::string name, tf::TransformLi
   onInitialize();
 }
 
-const std::vector<geometry_msgs::Point>& Layer::getFootprint() const
+const std::vector<geometry_msgs::msg::Point>& Layer::getFootprint() const
 {
   return layered_costmap_->getFootprint();
 }
