@@ -41,8 +41,8 @@
 #include <rclcpp/rclcpp.h>
 #include <costmap_2d/costmap_layer.h>
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/GenericPluginConfig.h>
-#include <dynamic_reconfigure/server.h>
+//#include <costmap_2d/GenericPluginConfig.h>
+//#include <dynamic_reconfigure/server.h>
 #include <nav_msgs/msg/occupancy_grid.h>
 #include <map_msgs/msg/occupancy_grid_update.h>
 #include <message_filters/subscriber.h>
@@ -73,9 +73,9 @@ private:
    * map along with its size will determine what parts of the costmap's
    * static map are overwritten.
    */
-  void incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map);
-  void incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update);
-  void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
+  void incomingMap(const nav_msgs::msg::OccupancyGrid::SharedPtr new_map);
+  void incomingUpdate(const map_msgs::msg::OccupancyGridUpdateConstPtr& update);
+  //void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 
   unsigned char interpretValue(unsigned char value);
 
@@ -89,8 +89,8 @@ private:
   bool use_maximum_;
   bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing
   bool trinary_costmap_;
-  ros::Subscriber map_sub_, map_update_sub_;
-rclcpp::subscription<>
+  rclcpp::Subscription<map_msgs::msg::OccupancyGridUpdate>::SharedPtr map_update_sub_;
+
   unsigned char lethal_threshold_, unknown_cost_value_;
 
 //  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;

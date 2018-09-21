@@ -49,33 +49,54 @@ using costmap_2d::FREE_SPACE;
 namespace costmap_2d
 {
 
-StaticLayer::StaticLayer() : dsrv_(NULL) {}
+//StaticLayer::StaticLayer() : dsrv_(NULL) {}
+StaticLayer::StaticLayer() {}
 
 StaticLayer::~StaticLayer()
 {
-  if (dsrv_)
-    delete dsrv_;
+  //if (dsrv_)
+  //  delete dsrv_;
 }
 
 void StaticLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name_), g_nh;
+  //ros::NodeHandle nh("~/" + name_), g_nh;
+  auto nh = rclcpp::Node::make_shared("~/" + name_);
+  rclcpp::Node::SharedPtr g_nh;
+  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(nh);
+
   current_ = true;
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
   std::string map_topic;
-  nh.param("map_topic", map_topic, std::string("map"));
-  nh.param("first_map_only", first_map_only_, false);
-  nh.param("subscribe_to_updates", subscribe_to_updates_, false);
+  //nh.param("map_topic", map_topic, std::string("map"));
+  //nh.param("first_map_only", first_map_only_, false);
+  //nh.param("subscribe_to_updates", subscribe_to_updates_, false);
 
-  nh.param("track_unknown_space", track_unknown_space_, true);
-  nh.param("use_maximum", use_maximum_, false);
+  map_topic = parameters_client->get_parameter<std::string>("map_topic",std::string("map"));
+  first_map_only = parameters_client->get_parameter<bool>("first_map_only",false);
+  subscribe_to_updates_ = parameters_client->get_parameter<bool>("subscribe_to_updates",false);
+
+
+
+  //nh.param("track_unknown_space", track_unknown_space_, true);
+  //nh.param("use_maximum", use_maximum_, false);
+
+  track_unknown_space_ = parameters_client->get_parameter<bool>("track_unknown_space",true);
+  use_maximum_ = parameters_client->get_parameter<bool>("use_maximum",false);
+
 
   int temp_lethal_threshold, temp_unknown_cost_value;
-  nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
-  nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
-  nh.param("trinary_costmap", trinary_costmap_, true);
+  //nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
+  //nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
+  //nh.param("trinary_costmap", trinary_costmap_, true);
+
+  temp_lethal_threshold = parameters_client->get_parameter<int>("lethal_cost_threshold",100);
+  temp_unknown_cost_value = parameters_client->get_parameter<int>("unknown_cost_value",-1);
+  trinary_costmap_ = parameters_client->get_parameter<bool>("trinary_costmap",true);
+
+  
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
@@ -84,25 +105,28 @@ void StaticLayer::onInitialize()
   if (map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
     // we'll subscribe to the latched topic that the map server uses
-    ROS_INFO("Requesting the map...");
-    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
+    //ROS_INFO("Requesting the map...");
+    auto map_sub_ = g_nh->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic,
+      std::bind(&StaticLayer::incomingMap, this, std::placeholders::_1));
+    //map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
     map_received_ = false;
     has_updated_data_ = false;
 
-    ros::Rate r(10);
-    while (!map_received_ && g_nh.ok())
+    rclcpp::Rate r(10);
+    while (!map_received_ && rclcpp.ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       r.sleep();
     }
 
-    ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+    //ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
 
     if (subscribe_to_updates_)
     {
-      ROS_INFO("Subscribing to updates");
+      //ROS_INFO("Subscribing to updates");
       map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
-
+      map_update_sub_ = g_nh->create_subscription<map_msgs::msg::OccupancyGridUpdate>(map_topic + "_updates",
+        std::bind(&StaticLayer::incomingUpdate, this, std::placeholders::_1));
     }
   }
   else
@@ -110,7 +134,7 @@ void StaticLayer::onInitialize()
     has_updated_data_ = true;
   }
 
-  if (dsrv_)
+/*   if (dsrv_)
   {
     delete dsrv_;
   }
@@ -118,10 +142,10 @@ void StaticLayer::onInitialize()
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
       &StaticLayer::reconfigureCB, this, _1, _2);
-  dsrv_->setCallback(cb);
+  dsrv_->setCallback(cb); */
 }
 
-void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
+/* void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
 {
   if (config.enabled != enabled_)
   {
@@ -131,7 +155,7 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
     width_ = size_x_;
     height_ = size_y_;
   }
-}
+} */
 
 void StaticLayer::matchSize()
 {
@@ -161,7 +185,7 @@ unsigned char StaticLayer::interpretValue(unsigned char value)
   return scale * LETHAL_OBSTACLE;
 }
 
-void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
+void StaticLayer::incomingMap(const nav_msgs::msg::OccupancyGrid::SharedPtr new_map)
 {
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
@@ -216,12 +240,12 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   // shutdown the map subscrber if firt_map_only_ flag is on
   if (first_map_only_)
   {
-    ROS_INFO("Shutting down the map subscriber. first_map_only flag is on");
-    map_sub_.shutdown();
+    //ROS_INFO("Shutting down the map subscriber. first_map_only flag is on");
+    //map_sub_.shutdown();
   }
 }
 
-void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
+void StaticLayer::incomingUpdate(const map_msgs::msg::OccupancyGridUpdate::SharedPtr update)
 {
   unsigned int di = 0;
   for (unsigned int y = 0; y < update->height ; y++)
