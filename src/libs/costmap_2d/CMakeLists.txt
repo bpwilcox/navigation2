@@ -31,7 +31,7 @@ find_package(pluginlib REQUIRED)
 #	TODO(bpwilcox): port remaining packages
 #find_package(tf2_sensor_msgs REQUIRED)
 #find_package(dynamic_reconfigure REQUIRED) 
-#find_package(message_filters REQUIRED)
+find_package(message_filters REQUIRED)
 #find_package(voxel_grid REQUIRED)
 
 remove_definitions(-DDISABLE_LIBUSB-1.0)
@@ -81,6 +81,7 @@ set(dependencies
   xmlrpcpp
   pluginlib
   tf2_geometry_msgs
+  message_filters
 )
 
 ament_target_dependencies(nav2_costmap_2d 
@@ -96,7 +97,7 @@ add_library(layers
   plugins/inflation_layer.cpp
 
 	#	TODO(bpwilcox): port additional plugin layers
-  #plugins/static_layer.cpp
+  plugins/static_layer.cpp
   #plugins/obstacle_layer.cpp
   #plugins/voxel_layer.cpp
   #src/observation_buffer.cpp
