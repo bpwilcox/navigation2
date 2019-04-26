@@ -27,8 +27,8 @@ using namespace std::chrono_literals;
 namespace nav2_map_server
 {
 
-MapServer::MapServer(const std::string & node_name)
-: Node(node_name)
+MapServer::MapServer(const std::string & node_name, rclcpp::NodeOptions node_options)
+: Node(node_name, node_options)
 {
   // Get the MAP YAML file, which includes the image filename and the map type
   getParameters();
@@ -46,13 +46,21 @@ MapServer::MapServer(const std::string & node_name)
   map_loader_->startServices();
 }
 
-MapServer::MapServer()
-: MapServer("map_server")
-{
-}
+// MapServer::MapServer()
+// : MapServer("map_server")
+// {
+// }
 
 void MapServer::getParameters()
 {
+  // auto node_parameters = this->get_node_parameters_interface();
+  // auto initial_param_map = node_parameters->get_initial_parameter_values();
+  // this->declare_parameter("yaml_filename");
+  // RCLCPP_INFO(this->get_logger(), "Number of initialized parameters: %d", initial_param_map.size());
+
+  bool is_set = this->has_parameter("yaml_filename");
+  RCLCPP_INFO(this->get_logger(), "Is parameter set: %d", is_set);
+  
   get_parameter_or_set("yaml_filename", yaml_filename_, std::string("map.yaml"));
 
   // Make sure that there's a valid file there and open it up

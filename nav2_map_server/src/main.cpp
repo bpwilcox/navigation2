@@ -24,7 +24,10 @@ int main(int argc, char ** argv)
 
   try {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<nav2_map_server::MapServer>(node_name));
+    rclcpp::NodeOptions node_options;
+    node_options.automatically_declare_initial_parameters(true);
+
+    rclcpp::spin(std::make_shared<nav2_map_server::MapServer>(node_name, node_options));
     rclcpp::shutdown();
   } catch (std::exception & ex) {
     RCLCPP_ERROR(rclcpp::get_logger(node_name.c_str()), ex.what());

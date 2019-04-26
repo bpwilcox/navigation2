@@ -28,8 +28,8 @@ namespace nav2_map_server
 class MapServer : public rclcpp::Node
 {
 public:
-  explicit MapServer(const std::string & node_name);
-  MapServer();
+  explicit MapServer(const std::string & node_name, rclcpp::NodeOptions node_options);
+  // MapServer();
 
 private:
   void getParameters();
