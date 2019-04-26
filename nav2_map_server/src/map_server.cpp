@@ -27,7 +27,7 @@ using namespace std::chrono_literals;
 namespace nav2_map_server
 {
 
-MapServer::MapServer(const std::string & node_name, rclcpp::NodeOptions node_options)
+MapServer::MapServer(const std::string & node_name, rclcpp::NodeOptions & node_options)
 : Node(node_name, node_options)
 {
   // Get the MAP YAML file, which includes the image filename and the map type
