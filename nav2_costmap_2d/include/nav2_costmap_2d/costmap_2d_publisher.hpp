@@ -96,6 +96,7 @@ public:
 private:
   /** @brief Prepare grid_ message for publication. */
   void prepareGrid();
+  void prepareCostmap();
 
   /** @brief Publish the latest full costmap to the new subscriber. */
   // void onNewSubscription(const ros::SingleSubscriberPublisher& pub);
@@ -109,9 +110,12 @@ private:
   bool active_;
   bool always_send_full_costmap_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_pub_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_raw_pub_;
   rclcpp::Publisher<map_msgs::msg::OccupancyGridUpdate>::SharedPtr costmap_update_pub_;
+  rclcpp::Publisher<map_msgs::msg::OccupancyGridUpdate>::SharedPtr costmap_raw_update_pub_;
 
   nav_msgs::msg::OccupancyGrid grid_;
+  nav_msgs::msg::OccupancyGrid grid_raw_;
   // Translate from 0-255 values in costmap to -1 to 100 values in message.
   static char * cost_translation_table_;
 };
