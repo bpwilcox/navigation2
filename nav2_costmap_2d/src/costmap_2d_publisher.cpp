@@ -62,8 +62,12 @@ Costmap2DPublisher::Costmap2DPublisher(
   // TODO(bpwilcox): port onNewSubscription functionality for publisher
   costmap_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name,
       custom_qos_profile);
+  costmap_raw_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name + "_raw",
+      custom_qos_profile);  
   costmap_update_pub_ = ros_node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
     topic_name + "_updates", custom_qos_profile);
+  costmap_raw_update_pub_ = ros_node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
+    topic_name + "_raw_updates", custom_qos_profile);
 
   if (cost_translation_table_ == NULL) {
     cost_translation_table_ = new char[256];
@@ -120,8 +124,10 @@ void Costmap2DPublisher::prepareGrid()
   saved_origin_y_ = costmap_->getOriginY();
 
   grid_.data.resize(grid_.info.width * grid_.info.height);
-
+  
   unsigned char * data = costmap_->getCharMap();
+  grid_raw_ = grid_;
+  grid_raw_.data = data;
   for (unsigned int i = 0; i < grid_.data.size(); i++) {
     grid_.data[i] = cost_translation_table_[data[i]];
   }
@@ -144,10 +150,14 @@ void Costmap2DPublisher::publishCostmap()
   {
     prepareGrid();
     costmap_pub_->publish(grid_);
+    costmap_raw_pub_->publish(grid_raw_);
+
   } else if (x0_ < xn_) {
     std::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
     // Publish Just an Update
     map_msgs::msg::OccupancyGridUpdate update;
+    map_msgs::msg::OccupancyGridUpdate update_raw;
+
     update.header.stamp = rclcpp::Time();
     update.header.frame_id = global_frame_;
     update.x = x0_;
@@ -155,15 +165,18 @@ void Costmap2DPublisher::publishCostmap()
     update.width = xn_ - x0_;
     update.height = yn_ - y0_;
     update.data.resize(update.width * update.height);
-
+    update_raw = update;
+    
     unsigned int i = 0;
     for (unsigned int y = y0_; y < yn_; y++) {
       for (unsigned int x = x0_; x < xn_; x++) {
         unsigned char cost = costmap_->getCost(x, y);
+        update_raw.data[i++] = cost;
         update.data[i++] = cost_translation_table_[cost];
       }
     }
     costmap_update_pub_->publish(update);
+    costmap_raw_update_pub_->publish(update_raw);
   }
 
   xn_ = yn_ = 0;
