@@ -107,7 +107,7 @@ void Costmap2DPublisher::prepareGrid()
   double resolution = costmap_->getResolution();
 
   grid_.header.frame_id = global_frame_;
-  grid_.header.stamp = rclcpp::Time();
+  grid_.header.stamp = node_->now();
 
   grid_.info.resolution = resolution;
 
@@ -124,11 +124,11 @@ void Costmap2DPublisher::prepareGrid()
   saved_origin_y_ = costmap_->getOriginY();
 
   grid_.data.resize(grid_.info.width * grid_.info.height);
+  grid_raw_ = grid_;
   
   unsigned char * data = costmap_->getCharMap();
-  grid_raw_ = grid_;
-  grid_raw_.data = data;
   for (unsigned int i = 0; i < grid_.data.size(); i++) {
+    grid_raw_.data[i] = data[i];
     grid_.data[i] = cost_translation_table_[data[i]];
   }
 }
@@ -158,7 +158,7 @@ void Costmap2DPublisher::publishCostmap()
     map_msgs::msg::OccupancyGridUpdate update;
     map_msgs::msg::OccupancyGridUpdate update_raw;
 
-    update.header.stamp = rclcpp::Time();
+    update.header.stamp = node_->now();
     update.header.frame_id = global_frame_;
     update.x = x0_;
     update.y = y0_;
