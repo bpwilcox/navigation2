@@ -51,6 +51,7 @@ add_library(nav2_costmap_2d_core SHARED
   src/observation_buffer.cpp
   src/clear_costmap_service.cpp
   src/costmap_subscriber.cpp
+  src/footprint_subscriber.cpp
 )
 
 set(dependencies

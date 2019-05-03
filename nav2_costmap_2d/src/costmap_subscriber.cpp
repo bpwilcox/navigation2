@@ -1,40 +1,17 @@
-/*********************************************************************
- *
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2008, 2013, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- * Author: Eitan Marder-Eppstein
- *         David V. Lu!!
- *********************************************************************/
+// Copyright (c) 2019 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <string>
 
 #include "nav2_costmap_2d/costmap_subscriber.hpp"
@@ -53,26 +30,39 @@ CostmapSubscriber::CostmapSubscriber(
 
 CostmapSubscriber::~CostmapSubscriber() {}
 
-bool CostmapSubscriber::getCostmap(Costmap2D & costmap)
+Costmap2D * CostmapSubscriber::getCostmap()
 {
-  if (!costmap_received_) {
-    return false;
-  }
-  costmap = Costmap2D(costmap_);
-  return true;
+  return costmap_;
 }
 
-void CostmapSubscriber::toCostmap2D(nav_msgs::msg::OccupancyGrid::SharedPtr msg)
+void CostmapSubscriber::toCostmap2D(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
-  Costmap2D costmap = Costmap2D(
+  if (!costmap_received_) {
+    costmap_ = new Costmap2D(
     msg->info.width, msg->info.height,
     msg->info.resolution, msg->info.origin.position.x,
     msg->info.origin.position.y);
-  
-  unsigned char * master_array = costmap.getCharMap();
-  master_array = msg->data;
+  } else if (costmap_->getSizeInCellsX() != msg->info.width ||
+    costmap_->getSizeInCellsY() != msg->info.height ||
+    costmap_->getResolution() != msg->info.resolution ||
+    costmap_->getOriginX() != msg->info.origin.position.x ||
+    costmap_->getOriginY() != msg->info.origin.position.y)
+  {
+    // Update the size of the costmap 
+    costmap_->resizeMap(msg->info.width, msg->info.height,
+      msg->info.resolution,
+      msg->info.origin.position.x,
+      msg->info.origin.position.y);
+  }
 
-  costmap_ = Costmap2D(costmap);
+  unsigned char * master_array = costmap_->getCharMap();
+  unsigned int index = 0;
+  for (unsigned int i = 0; i <  msg->info.width; ++i) {
+    for (unsigned int j = 0; j < msg->info.height; ++j) {
+      master_array[index] = msg->data[index];
+      ++index;
+    }
+  }
 }
 
 void CostmapSubscriber::costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
