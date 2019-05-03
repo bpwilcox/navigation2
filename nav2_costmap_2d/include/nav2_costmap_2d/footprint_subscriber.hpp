@@ -12,50 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_COSTMAP_2D__COSTMAP_2D_SUBSCRIBER_HPP_
-#define NAV2_COSTMAP_2D__COSTMAP_2D_SUBSCRIBER_HPP_
+#ifndef NAV2_COSTMAP_2D__FOOTPRINT_SUBSCRIBER_HPP_
+#define NAV2_COSTMAP_2D__FOOTPRINT_SUBSCRIBER_HPP_
 
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
-#include "nav2_costmap_2d/costmap_2d.hpp"
-#include "nav_msgs/msg/occupancy_grid.hpp"
+#include "nav2_costmap_2d/footprint.hpp"
 
 namespace nav2_costmap_2d
 {
 /**
- * @class CostmapSubscriber
+ * @class FootprintSubscriber
  * @brief A tool to subscribe to costmap messages
  * */
-class CostmapSubscriber
+class FootprintSubscriber
 {
 public:
   /**
-   * @brief  Constructor for the CostmapSubscriber
+   * @brief  Constructor for the FootprintSubscriber
    */
-  CostmapSubscriber(
+  FootprintSubscriber(
     rclcpp::Node::SharedPtr ros_node,
     std::string topic_name);
 
   /**
    * @brief  Destructor
    */
-  ~CostmapSubscriber();
+  ~FootprintSubscriber();
 
-Costmap2D * getCostmap();
+bool getFootprint(std::vector<geometry_msgs::msg::Point> & footprint);
 
 protected:
-  void toCostmap2D(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
-  void costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  void footprint_callback(const geometry_msgs::msg::PolygonStamped::SharedPtr msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
-  Costmap2D * costmap_;
   std::string topic_name_;
-  bool costmap_received_;
+  bool footprint_received_;
+  std::vector<geometry_msgs::msg::Point> footprint_;
 
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PolygonStamped>::SharedPtr footprint_sub_;
 };
 
 }  // namespace nav2_costmap_2d
-#endif  // NAV2_COSTMAP_2D__COSTMAP_2D_SUBSCRIBER_HPP_
+#endif  // NAV2_COSTMAP_2D__FOOTPRINT_SUBSCRIBER_HPP_
