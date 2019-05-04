@@ -45,7 +45,7 @@ void FootprintSubscriber::footprint_callback(const geometry_msgs::msg::PolygonSt
     footprint_received_ = true;
   }
   footprint_ = toPointVector(
-    std::make_shared<std::vector<geometry_msgs::msg::Polygon>>(msg->polygon));
+    std::make_shared<geometry_msgs::msg::Polygon>(msg->polygon));
 }
 
 }  // namespace nav2_costmap_2d
