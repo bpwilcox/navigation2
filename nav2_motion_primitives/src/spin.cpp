@@ -41,6 +41,12 @@ Spin::Spin(rclcpp::Node::SharedPtr & node)
   rotational_acc_lim_ = 3.2;
   goal_tolerance_angle_ = 0.10;
   start_yaw_ = 0.0;
+
+  std::string costmap_topic, footprint_topic;
+  node->get_parameter_or<std::string>("costmap_topic", costmap_topic, "local_costmap/costmap_raw");
+  node->get_parameter_or<std::string>("footprint_topic", footprint_topic, "footprint");
+
+  collision_checker_ = std::make_unique<dwb_critics::CollisionChecker>(node, costmap_topic, footprint_topic);
 }
 
 Spin::~Spin()
