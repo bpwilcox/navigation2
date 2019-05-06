@@ -65,6 +65,10 @@ const geometry_msgs::msg::Pose2D & pose)
 double CollisionChecker::scorePose(
 const geometry_msgs::msg::Pose2D & pose)
 {
+  if (!costmap_) {
+    throw nav_core2::PlannerException("Costmap not available");
+  }
+
   unsigned int cell_x, cell_y;
   if (!costmap_->worldToMap(pose.x, pose.y, cell_x, cell_y)) {
     throw nav_core2::IllegalTrajectoryException(name_, "Trajectory Goes Off Grid.");

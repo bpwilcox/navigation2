@@ -22,7 +22,10 @@ namespace nav2_costmap_2d
 CostmapSubscriber::CostmapSubscriber(
   rclcpp::Node::SharedPtr ros_node,
   std::string topic_name)
-: node_(ros_node), topic_name_(topic_name)
+: node_(ros_node),
+  topic_name_(topic_name),
+  costmap_received_(false),
+  costmap_(nullptr)
 {
   costmap_sub_ = node_->create_subscription<nav_msgs::msg::OccupancyGrid>(topic_name,
       std::bind(&CostmapSubscriber::costmap_callback, this, std::placeholders::_1));
