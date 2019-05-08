@@ -44,9 +44,10 @@ Spin::Spin(rclcpp::Node::SharedPtr & node)
 
   std::string costmap_topic, footprint_topic;
   node->get_parameter_or<std::string>("costmap_topic", costmap_topic, "local_costmap/costmap_raw");
-  node->get_parameter_or<std::string>("footprint_topic", footprint_topic, "footprint");
-
-  collision_checker_ = std::make_unique<dwb_critics::CollisionChecker>(node, costmap_topic, footprint_topic);
+  node->get_parameter_or<std::string>("footprint_topic", footprint_topic, "local_costmap/footprint");
+  costmap_sub_ = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(node, costmap_topic);
+  footprint_sub_ = std::make_shared<nav2_costmap_2d::FootprintSubscriber>(node, footprint_topic);
+  collision_checker_ = std::make_shared<dwb_critics::CollisionChecker>(node, costmap_sub_, footprint_sub_);
 }
 
 Spin::~Spin()

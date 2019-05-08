@@ -32,8 +32,8 @@ class CollisionChecker
 public:
   CollisionChecker(
     rclcpp::Node::SharedPtr ros_node,
-    std::string costmap_topic,
-    std::string footprint_topic,
+    std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub,
+    std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub,
     std::string name = "collision_checker");
   
   ~CollisionChecker();
@@ -47,17 +47,14 @@ protected:
   double lineCost(int x0, int x1, int y0, int y1);
   double pointCost(int x, int y);
   Footprint getOrientedFootprint(
-    const geometry_msgs::msg::Pose2D & pose, 
+    const geometry_msgs::msg::Pose2D & pose,
     const Footprint & footprint_spec);
 
   rclcpp::Node::SharedPtr node_;
-  std::string costmap_topic_;
-  std::string footprint_topic_;
   std::string name_;
-  nav2_costmap_2d::Costmap2D * costmap_;
-
-  std::unique_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub_;
-  std::unique_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub_;  
+  
+  std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub_;
+  std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub_;  
 };
 }  // namespace dwb_critics
 

@@ -108,12 +108,17 @@ ament_target_dependencies(nav2_costmap_2d
   ${dependencies}
 )
 
+add_executable(test_subscribers src/test_subscribers.cpp)
+target_link_libraries(test_subscribers
+  nav2_costmap_2d_core
+)
+
 target_link_libraries(nav2_costmap_2d
   nav2_costmap_2d_core
   layers
 )
 
-install(TARGETS nav2_costmap_2d_core nav2_costmap_2d layers
+install(TARGETS nav2_costmap_2d_core nav2_costmap_2d layers test_subscribers
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}

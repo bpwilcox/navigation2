@@ -21,7 +21,7 @@ namespace nav2_costmap_2d
 
 CostmapSubscriber::CostmapSubscriber(
   rclcpp::Node::SharedPtr ros_node,
-  std::string topic_name)
+  std::string & topic_name)
 : node_(ros_node),
   topic_name_(topic_name),
   costmap_received_(false),

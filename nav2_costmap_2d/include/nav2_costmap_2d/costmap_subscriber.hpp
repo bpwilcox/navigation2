@@ -35,7 +35,7 @@ public:
    */
   CostmapSubscriber(
     rclcpp::Node::SharedPtr ros_node,
-    std::string topic_name);
+    std::string & topic_name);
 
   /**
    * @brief  Destructor

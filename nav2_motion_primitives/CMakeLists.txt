@@ -14,7 +14,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(dwb_critics REQUIRED)
-
+find_package(nav2_costmap_2d REQUIRED)
 nav2_package()
 
 include_directories(
@@ -36,6 +36,7 @@ set(dependencies
   tf2_geometry_msgs
   geometry_msgs
   dwb_critics
+  nav2_costmap_2d
 )
 
 # Library
@@ -54,13 +55,22 @@ add_executable(${executable_name}
   src/main.cpp
 )
 
+# Test Executable
+#add_executable(test_collision_checker
+#  src/test_collision_checker.cpp
+#)
+
 target_link_libraries(${executable_name} ${library_name})
 
 ament_target_dependencies(${executable_name}
   ${dependencies}
 )
 
-install(TARGETS ${executable_name} ${library_name}
+#ament_target_dependencies(test_collision_checker
+#  ${dependencies}
+#)
+
+install(TARGETS ${executable_name} ${library_name} #test_collision_checker
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}

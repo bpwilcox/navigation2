@@ -21,8 +21,8 @@ namespace nav2_costmap_2d
 
 FootprintSubscriber::FootprintSubscriber(
   rclcpp::Node::SharedPtr ros_node,
-  std::string topic_name)
-: node_(ros_node), topic_name_(topic_name)
+  std::string & topic_name)
+: node_(ros_node), topic_name_(topic_name), footprint_received_(false)
 {
   footprint_sub_ = node_->create_subscription<geometry_msgs::msg::PolygonStamped>(topic_name,
       std::bind(&FootprintSubscriber::footprint_callback, this, std::placeholders::_1));

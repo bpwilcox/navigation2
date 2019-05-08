@@ -1,0 +1,3 @@
+test_node:
+    ros__parameters:
+        footprint_topic: "global_costmap/footprint"

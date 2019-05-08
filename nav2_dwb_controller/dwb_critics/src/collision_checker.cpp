@@ -40,15 +40,13 @@ Footprint CollisionChecker::getOrientedFootprint(
 
 CollisionChecker::CollisionChecker(
   rclcpp::Node::SharedPtr ros_node,
-  std::string costmap_topic,
-  std::string footprint_topic,
+  std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub,
+  std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub,
   std::string name)
-: node_(ros_node), costmap_topic_(costmap_topic),
-  footprint_topic_(footprint_topic), name_(name)
+: node_(ros_node), name_(name),
+  costmap_sub_(costmap_sub), footprint_sub_(footprint_sub)
 {
-  costmap_sub_ = std::make_unique<nav2_costmap_2d::CostmapSubscriber>(node_, costmap_topic_);
-  footprint_sub_ = std::make_unique<nav2_costmap_2d::FootprintSubscriber>(node_, footprint_topic_);
-  costmap_ = costmap_sub_->getCostmap();
+  // costmap_ = costmap_sub_->getCostmap();
 }
 
 CollisionChecker::~CollisionChecker() {}
@@ -56,16 +54,26 @@ CollisionChecker::~CollisionChecker() {}
 bool CollisionChecker::isCollisionFree(
 const geometry_msgs::msg::Pose2D & pose)
 {
-  if (scorePose(pose) < 0) {
+  try {
+    if (scorePose(pose) < 0) {
+      return false;
+    }
+    return true;
+  } catch (const nav_core2::IllegalTrajectoryException & e) {
+    RCLCPP_ERROR(node_->get_logger(), "%s", e.what());
+    return false;
+  } catch (const nav_core2::PlannerException & e) {
+    RCLCPP_ERROR(node_->get_logger(), "%s", e.what());
     return false;
   }
-  return true;
 }
 
 double CollisionChecker::scorePose(
 const geometry_msgs::msg::Pose2D & pose)
 {
-  if (!costmap_) {
+  nav2_costmap_2d::Costmap2D * costmap_ = costmap_sub_->getCostmap();
+
+  if (costmap_ == nullptr) {
     throw nav_core2::PlannerException("Costmap not available");
   }
 
@@ -137,6 +145,8 @@ double CollisionChecker::lineCost(int x0, int x1, int y0, int y1)
 }
 double CollisionChecker::pointCost(int x, int y)
 {
+  nav2_costmap_2d::Costmap2D * costmap_ = costmap_sub_->getCostmap();
+
   unsigned char cost = costmap_->getCost(x, y);
   // if the cell is in an obstacle the path is invalid or unknown
   if (cost == nav2_costmap_2d::LETHAL_OBSTACLE) {
