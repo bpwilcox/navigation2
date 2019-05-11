@@ -32,6 +32,13 @@ Robot::Robot(rclcpp::Node::SharedPtr & node)
     "odom", std::bind(&Robot::onOdomReceived, this, std::placeholders::_1));
 
   vel_pub_ = node_->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
+
+  node_->get_parameter_or<std::string>("global_frame", global_frame_, std::string("map"));
+  node_->get_parameter_or<std::string>("robot_base_frame", robot_base_frame_, std::string("base_link"));
+
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
+  tf_buffer_->setUsingDedicatedThread(true);
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_, node_, false);
 }
 
 void
@@ -100,6 +107,38 @@ void
 Robot::sendVelocity(geometry_msgs::msg::Twist twist)
 {
   vel_pub_->publish(twist);
+}
+
+bool
+Robot::getRobotPose(geometry_msgs::msg::PoseStamped & global_pose) const
+{
+  tf2::toMsg(tf2::Transform::getIdentity(), global_pose.pose);
+  geometry_msgs::msg::PoseStamped robot_pose;
+  tf2::toMsg(tf2::Transform::getIdentity(), robot_pose.pose);
+
+  robot_pose.header.frame_id = robot_base_frame_;
+  robot_pose.header.stamp = rclcpp::Time();
+
+  rclcpp::Time current_time = node_->now();  // save time for checking tf delay later
+  // get the global pose of the robot
+  try {
+    tf_buffer_->transform(robot_pose, global_pose, global_frame_);
+  } catch (tf2::LookupException & ex) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "No Transform available Error looking up robot pose: %s\n", ex.what());
+    return false;
+  } catch (tf2::ConnectivityException & ex) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "Connectivity Error looking up robot pose: %s\n", ex.what());
+    return false;
+  } catch (tf2::ExtrapolationException & ex) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "Extrapolation Error looking up robot pose: %s\n", ex.what());
+    return false;
+  }
+  // check global_pose timeout
+
+  return true;
 }
 
 }  // namespace nav2_robot

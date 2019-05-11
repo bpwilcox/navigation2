@@ -20,6 +20,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/costmap_2d.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "nav2_msgs/msg/costmap.hpp"
 
 namespace nav2_costmap_2d
 {
@@ -43,18 +44,21 @@ public:
   ~CostmapSubscriber();
 
 Costmap2D * getCostmap();
+std::string getTopicName() {return topic_name_;}
 
 protected:
-  void toCostmap2D(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
-  void costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  void toCostmap2D();
+  void costmap_callback(const nav2_msgs::msg::Costmap::SharedPtr msg);
 
 private:
   rclcpp::Node::SharedPtr node_;
   Costmap2D * costmap_;
+  nav2_msgs::msg::Costmap::SharedPtr msg_;
+
   std::string topic_name_;
   bool costmap_received_;
 
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;
+  rclcpp::Subscription<nav2_msgs::msg::Costmap>::SharedPtr costmap_sub_;
 };
 
 }  // namespace nav2_costmap_2d

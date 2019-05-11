@@ -19,6 +19,19 @@
 namespace nav2_costmap_2d
 {
 
+void printFootprint(std::vector<geometry_msgs::msg::Point> & footprint)
+{
+  printf("footprint points:\n");
+  for (int i = 0; i < footprint.size(); i++) {
+    printf("- x: %f", footprint[i].x);
+    printf("\n");    
+    printf("  y: %f", footprint[i].y);
+    printf("\n");    
+    printf("  z: %f", footprint[i].z);
+    printf("\n");    
+  }
+}
+
 FootprintSubscriber::FootprintSubscriber(
   rclcpp::Node::SharedPtr ros_node,
   std::string & topic_name)
@@ -46,7 +59,10 @@ void FootprintSubscriber::footprint_callback(const geometry_msgs::msg::PolygonSt
   }
   footprint_ = toPointVector(
     std::make_shared<geometry_msgs::msg::Polygon>(msg->polygon));
+    // printFootprint(footprint_);
 }
+
+
 
 }  // namespace nav2_costmap_2d
 

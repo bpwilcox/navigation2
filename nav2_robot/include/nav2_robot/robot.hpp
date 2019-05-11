@@ -20,7 +20,18 @@
 #include "rclcpp/rclcpp.hpp"
 #include "urdf/model.h"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "tf2/transform_datatypes.h"
+#include "tf2_ros/buffer.h"
+#include "tf2/convert.h"
+#include "tf2/LinearMath/Transform.h"
+#include "tf2_ros/transform_listener.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#include "tf2/utils.h"
+#pragma GCC diagnostic pop
+#include "tf2/time.h"
 
 namespace nav2_robot
 {
@@ -38,6 +49,7 @@ public:
   bool getOdometry(nav_msgs::msg::Odometry::SharedPtr & robot_odom);
   std::string getName();
   void sendVelocity(geometry_msgs::msg::Twist twist);
+  bool getRobotPose(geometry_msgs::msg::PoseStamped & global_pose) const;
 
 protected:
   // The ROS node to use to create publishers and subscribers
@@ -47,6 +59,14 @@ protected:
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pose_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr vel_pub_;
+
+  // Transform listener
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
+  // TF frame ids
+  std::string global_frame_;
+  std::string robot_base_frame_;
 
   // Subscription callbacks
   void onPoseReceived(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);

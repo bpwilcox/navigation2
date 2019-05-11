@@ -45,6 +45,7 @@
 #include "nav2_costmap_2d/costmap_2d.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "map_msgs/msg/occupancy_grid_update.hpp"
+#include "nav2_msgs/msg/costmap.hpp"
 #include "tf2/transform_datatypes.h"
 
 namespace nav2_costmap_2d
@@ -110,12 +111,12 @@ private:
   bool active_;
   bool always_send_full_costmap_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_pub_;
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_raw_pub_;
+  rclcpp::Publisher<nav2_msgs::msg::Costmap>::SharedPtr costmap_raw_pub_;
   rclcpp::Publisher<map_msgs::msg::OccupancyGridUpdate>::SharedPtr costmap_update_pub_;
-  rclcpp::Publisher<map_msgs::msg::OccupancyGridUpdate>::SharedPtr costmap_raw_update_pub_;
+  // rclcpp::Publisher<map_msgs::msg::OccupancyGridUpdate>::SharedPtr costmap_raw_update_pub_;
 
   nav_msgs::msg::OccupancyGrid grid_;
-  nav_msgs::msg::OccupancyGrid grid_raw_;
+  nav2_msgs::msg::Costmap grid_raw_;
   // Translate from 0-255 values in costmap to -1 to 100 values in message.
   static char * cost_translation_table_;
 };

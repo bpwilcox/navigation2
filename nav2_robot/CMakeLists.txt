@@ -7,6 +7,9 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(urdf REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 nav2_package()
 
@@ -23,6 +26,9 @@ ament_target_dependencies(nav2_robot
   urdf
   geometry_msgs
   nav_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
 )
 
 install(TARGETS ${PROJECT_NAME}

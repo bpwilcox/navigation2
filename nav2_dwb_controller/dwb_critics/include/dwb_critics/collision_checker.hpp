@@ -46,9 +46,6 @@ public:
 protected:
   double lineCost(int x0, int x1, int y0, int y1);
   double pointCost(int x, int y);
-  Footprint getOrientedFootprint(
-    const geometry_msgs::msg::Pose2D & pose,
-    const Footprint & footprint_spec);
 
   rclcpp::Node::SharedPtr node_;
   std::string name_;

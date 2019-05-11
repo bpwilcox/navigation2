@@ -60,14 +60,12 @@ Costmap2DPublisher::Costmap2DPublisher(
   custom_qos_profile.reliability = RMW_QOS_POLICY_RELIABILITY_RELIABLE;
 
   // TODO(bpwilcox): port onNewSubscription functionality for publisher
-  costmap_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name,
+  costmap_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name + "_rviz",
       custom_qos_profile);
-  costmap_raw_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name + "_raw",
+  costmap_raw_pub_ = ros_node->create_publisher<nav2_msgs::msg::Costmap>(topic_name,
       custom_qos_profile);  
   costmap_update_pub_ = ros_node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
     topic_name + "_updates", custom_qos_profile);
-  costmap_raw_update_pub_ = ros_node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
-    topic_name + "_raw_updates", custom_qos_profile);
 
   if (cost_translation_table_ == NULL) {
     cost_translation_table_ = new char[256];
@@ -124,12 +122,39 @@ void Costmap2DPublisher::prepareGrid()
   saved_origin_y_ = costmap_->getOriginY();
 
   grid_.data.resize(grid_.info.width * grid_.info.height);
-  grid_raw_ = grid_;
   
   unsigned char * data = costmap_->getCharMap();
   for (unsigned int i = 0; i < grid_.data.size(); i++) {
-    grid_raw_.data[i] = data[i];
     grid_.data[i] = cost_translation_table_[data[i]];
+  }
+}
+
+void Costmap2DPublisher::prepareCostmap()
+{
+  std::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
+  double resolution = costmap_->getResolution();
+
+  grid_raw_.header.frame_id = global_frame_;
+  grid_raw_.header.stamp = node_->now();
+
+  grid_raw_.metadata.layer = "master";
+  grid_raw_.metadata.resolution = resolution;
+
+  grid_raw_.metadata.size_x = costmap_->getSizeInCellsX();
+  grid_raw_.metadata.size_y = costmap_->getSizeInCellsY();
+
+  double wx, wy;
+  costmap_->mapToWorld(0, 0, wx, wy);
+  grid_raw_.metadata.origin.position.x = wx - resolution / 2;
+  grid_raw_.metadata.origin.position.y = wy - resolution / 2;
+  grid_raw_.metadata.origin.position.z = 0.0;
+  grid_raw_.metadata.origin.orientation.w = 1.0;
+
+  grid_raw_.data.resize(grid_raw_.metadata.size_x * grid_raw_.metadata.size_y);
+
+  unsigned char * data = costmap_->getCharMap();
+  for (unsigned int i = 0; i < grid_raw_.data.size(); i++) {
+    grid_raw_.data[i] = data[i];
   }
 }
 
@@ -149,6 +174,8 @@ void Costmap2DPublisher::publishCostmap()
     saved_origin_y_ != costmap_->getOriginY())
   {
     prepareGrid();
+    prepareCostmap();
+
     costmap_pub_->publish(grid_);
     costmap_raw_pub_->publish(grid_raw_);
 
@@ -156,7 +183,6 @@ void Costmap2DPublisher::publishCostmap()
     std::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
     // Publish Just an Update
     map_msgs::msg::OccupancyGridUpdate update;
-    map_msgs::msg::OccupancyGridUpdate update_raw;
 
     update.header.stamp = node_->now();
     update.header.frame_id = global_frame_;
@@ -165,18 +191,15 @@ void Costmap2DPublisher::publishCostmap()
     update.width = xn_ - x0_;
     update.height = yn_ - y0_;
     update.data.resize(update.width * update.height);
-    update_raw = update;
     
     unsigned int i = 0;
     for (unsigned int y = y0_; y < yn_; y++) {
       for (unsigned int x = x0_; x < xn_; x++) {
         unsigned char cost = costmap_->getCost(x, y);
-        update_raw.data[i++] = cost;
         update.data[i++] = cost_translation_table_[cost];
       }
     }
     costmap_update_pub_->publish(update);
-    costmap_raw_update_pub_->publish(update_raw);
   }
 
   xn_ = yn_ = 0;

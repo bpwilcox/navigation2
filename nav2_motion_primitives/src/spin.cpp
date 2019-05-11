@@ -96,16 +96,29 @@ nav2_tasks::TaskStatus Spin::timedSpin()
   cmd_vel.angular.z = 0.5;
 
   
-  auto current_pose = std::make_shared<geometry_msgs::msg::PoseWithCovarianceStamped>();
-  if (!robot_->getCurrentPose(current_pose)) {
+  // auto current_pose = std::make_shared<geometry_msgs::msg::PoseWithCovarianceStamped>();
+  
+  // if (!robot_->getCurrentPose(current_pose)) {
+  //   RCLCPP_ERROR(node_->get_logger(), "Current robot pose is not available.");
+  //   return TaskStatus::FAILED;
+  // }
+
+  // geometry_msgs::msg::Pose2D pose2d;
+  // pose2d.x = current_pose->pose.pose.position.x;
+  // pose2d.y = current_pose->pose.pose.position.y;
+  // pose2d.theta = tf2::getYaw(current_pose->pose.pose.orientation) + cmd_vel.angular.z * 0.1;
+
+  geometry_msgs::msg::PoseStamped current_pose;
+
+  if (!robot_->getRobotPose(current_pose)) {
     RCLCPP_ERROR(node_->get_logger(), "Current robot pose is not available.");
     return TaskStatus::FAILED;
   }
 
   geometry_msgs::msg::Pose2D pose2d;
-  pose2d.x = current_pose->pose.pose.position.x;
-  pose2d.y = current_pose->pose.pose.position.y;
-  pose2d.theta = tf2::getYaw(current_pose->pose.pose.orientation) + cmd_vel.angular.z * 0.1;
+  pose2d.x = current_pose.pose.position.x;
+  pose2d.y = current_pose.pose.position.y;
+  pose2d.theta = tf2::getYaw(current_pose.pose.orientation) + cmd_vel.angular.z * 0.1;
 
   if (!collision_checker_->isCollisionFree(pose2d))
   {

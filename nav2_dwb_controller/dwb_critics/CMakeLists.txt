@@ -55,7 +55,12 @@ ament_target_dependencies(${PROJECT_NAME}
   ${dependencies}
 )
 
-install(TARGETS ${PROJECT_NAME}
+add_executable(test_collision_checker src/test_collision_checker.cpp)
+target_link_libraries(test_collision_checker
+  dwb_critics
+)
+
+install(TARGETS ${PROJECT_NAME} test_collision_checker
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION lib/${PROJECT_NAME}

@@ -19,6 +19,17 @@
 namespace nav2_costmap_2d
 {
 
+void printMap(nav2_costmap_2d::Costmap2D & costmap)
+{
+  printf("map:\n");
+  for (int i = 0; i < costmap.getSizeInCellsY(); i++) {
+    for (int j = 0; j < costmap.getSizeInCellsX(); j++) {
+      printf("%4d", static_cast<int>(costmap.getCost(j, i)));
+    }
+    printf("\n\n");
+  }
+}
+
 CostmapSubscriber::CostmapSubscriber(
   rclcpp::Node::SharedPtr ros_node,
   std::string & topic_name)
@@ -27,7 +38,7 @@ CostmapSubscriber::CostmapSubscriber(
   costmap_received_(false),
   costmap_(nullptr)
 {
-  costmap_sub_ = node_->create_subscription<nav_msgs::msg::OccupancyGrid>(topic_name,
+  costmap_sub_ = node_->create_subscription<nav2_msgs::msg::Costmap>(topic_name,
       std::bind(&CostmapSubscriber::costmap_callback, this, std::placeholders::_1));
 }
 
@@ -38,42 +49,44 @@ Costmap2D * CostmapSubscriber::getCostmap()
   return costmap_;
 }
 
-void CostmapSubscriber::toCostmap2D(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
+void CostmapSubscriber::toCostmap2D()
 {
   if (!costmap_received_) {
     costmap_ = new Costmap2D(
-    msg->info.width, msg->info.height,
-    msg->info.resolution, msg->info.origin.position.x,
-    msg->info.origin.position.y);
-  } else if (costmap_->getSizeInCellsX() != msg->info.width ||
-    costmap_->getSizeInCellsY() != msg->info.height ||
-    costmap_->getResolution() != msg->info.resolution ||
-    costmap_->getOriginX() != msg->info.origin.position.x ||
-    costmap_->getOriginY() != msg->info.origin.position.y)
+    msg_->metadata.size_x, msg_->metadata.size_y,
+    msg_->metadata.resolution, msg_->metadata.origin.position.x,
+    msg_->metadata.origin.position.y);
+  } else if (costmap_->getSizeInCellsX() != msg_->metadata.size_x ||
+    costmap_->getSizeInCellsY() != msg_->metadata.size_y ||
+    costmap_->getResolution() != msg_->metadata.resolution ||
+    costmap_->getOriginX() != msg_->metadata.origin.position.x ||
+    costmap_->getOriginY() != msg_->metadata.origin.position.y)
   {
     // Update the size of the costmap 
-    costmap_->resizeMap(msg->info.width, msg->info.height,
-      msg->info.resolution,
-      msg->info.origin.position.x,
-      msg->info.origin.position.y);
+    costmap_->resizeMap(msg_->metadata.size_x, msg_->metadata.size_y,
+      msg_->metadata.resolution,
+      msg_->metadata.origin.position.x,
+      msg_->metadata.origin.position.y);
   }
 
   unsigned char * master_array = costmap_->getCharMap();
   unsigned int index = 0;
-  for (unsigned int i = 0; i <  msg->info.width; ++i) {
-    for (unsigned int j = 0; j < msg->info.height; ++j) {
-      master_array[index] = msg->data[index];
+  for (unsigned int i = 0; i <  msg_->metadata.size_x; ++i) {
+    for (unsigned int j = 0; j < msg_->metadata.size_y; ++j) {
+      master_array[index] = msg_->data[index];
       ++index;
     }
   }
 }
 
-void CostmapSubscriber::costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
+void CostmapSubscriber::costmap_callback(const nav2_msgs::msg::Costmap::SharedPtr msg)
 {
-  toCostmap2D(msg);
+  msg_ = msg;
+  toCostmap2D();
   if (!costmap_received_) {
     costmap_received_ = true;
   }
+  // printMap(*costmap_);
 }
 
 }  // namespace nav2_costmap_2d
