@@ -46,6 +46,9 @@ CostmapSubscriber::~CostmapSubscriber() {}
 
 Costmap2D * CostmapSubscriber::getCostmap()
 {
+  if (costmap_ == nullptr) {
+    throw std::runtime_error("Costmap is not available");
+  }
   return costmap_;
 }
 

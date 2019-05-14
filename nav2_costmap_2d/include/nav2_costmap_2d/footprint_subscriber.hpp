@@ -45,13 +45,12 @@ bool getFootprint(std::vector<geometry_msgs::msg::Point> & footprint);
 std::string getTopicName() {return topic_name_;}
 protected:
   void footprint_callback(const geometry_msgs::msg::PolygonStamped::SharedPtr msg);
-
+  void reset_footprint(std::vector<geometry_msgs::msg::Point> & footprint);
 private:
   rclcpp::Node::SharedPtr node_;
   std::string topic_name_;
   bool footprint_received_;
   std::vector<geometry_msgs::msg::Point> footprint_;
-
   rclcpp::Subscription<geometry_msgs::msg::PolygonStamped>::SharedPtr footprint_sub_;
 };
 

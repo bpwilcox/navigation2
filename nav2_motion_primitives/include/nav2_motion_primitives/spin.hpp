@@ -49,7 +49,9 @@ protected:
   std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub_;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub_;
   std::shared_ptr<dwb_critics::CollisionChecker> collision_checker_;
-
+  tf2_ros::Buffer tfBuffer_;
+  tf2_ros::TransformListener tfListener_;
+  
   std::chrono::system_clock::time_point start_time_;
 
   nav2_tasks::TaskStatus timedSpin();

@@ -45,14 +45,31 @@ void printFootprint(std::vector<geometry_msgs::msg::Point> & footprint)
   }
 }
 
+void printPose(geometry_msgs::msg::PoseStamped & pose)
+{
+  printf("Position:\n");
+  printf("- x: %f", pose.pose.position.x);
+  printf("\n");    
+  printf("  y: %f", pose.pose.position.y);
+  printf("\n");    
+  printf("  z: %f", pose.pose.position.z);
+  printf("\n");
+}
+
 CollisionChecker::CollisionChecker(
   rclcpp::Node::SharedPtr ros_node,
   std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub,
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub,
+  tf2_ros::Buffer & tf_buffer,
   std::string name)
-: node_(ros_node), name_(name),
+: tf_buffer_(tf_buffer),
+  node_(ros_node), name_(name),
   costmap_sub_(costmap_sub), footprint_sub_(footprint_sub)
 {
+  node_->get_parameter_or<std::string>("global_frame", global_frame_, std::string("map"));
+  node_->get_parameter_or<std::string>("robot_base_frame", robot_base_frame_, std::string("base_link"));
+
+  // tf_buffer_->setUsingDedicatedThread(true);
   // costmap_ = costmap_sub_->getCostmap();
 }
 
@@ -78,12 +95,17 @@ const geometry_msgs::msg::Pose2D & pose)
 double CollisionChecker::scorePose(
 const geometry_msgs::msg::Pose2D & pose)
 {
+  nav2_costmap_2d::Costmap2D * costmap_;
 
-  nav2_costmap_2d::Costmap2D * costmap_ = costmap_sub_->getCostmap();
-
-  if (costmap_ == nullptr) {
-    throw nav_core2::PlannerException("Costmap not available");
+  try {
+    costmap_ = costmap_sub_->getCostmap();
+  } catch (const std::runtime_error & e) {
+    throw nav_core2::PlannerException(e.what());
   }
+
+  // if (costmap_ == nullptr) {
+  //   throw nav_core2::PlannerException("Costmap not available");
+  // }
 
   // printMap(*costmap_);
 
@@ -93,13 +115,28 @@ const geometry_msgs::msg::Pose2D & pose)
     throw nav_core2::IllegalTrajectoryException(name_, "Trajectory Goes Off Grid.");
   }
 
-  Footprint footprint_spec;
-  if (!footprint_sub_->getFootprint(footprint_spec)) {
+  Footprint footprint;
+  if (!footprint_sub_->getFootprint(footprint)) {
     throw nav_core2::PlannerException("Footprint not available.");
   }
 
-  Footprint footprint = footprint_spec;
-  // nav2_costmap_2d::transformFootprint(pose.x, pose.y, pose.theta, footprint_spec, footprint);
+  // geometry_msgs::msg::PoseStamped current_pose;
+  //  if (!getRobotPose(current_pose)) {
+  //   throw nav_core2::PlannerException("Robot pose unavailable.");
+  // }
+  
+  // // printPose(current_pose);
+
+  // Footprint footprint_spec;
+  // nav2_costmap_2d::transformFootprint(
+  //   -current_pose.pose.position.x,
+  //   -current_pose.pose.position.y,
+  //   -tf2::getYaw(current_pose.pose.orientation),
+  //   footprint, footprint_spec);
+
+  Footprint footprint_spec;
+  resetFootprint(footprint, footprint_spec);
+  nav2_costmap_2d::transformFootprint(pose.x, pose.y, pose.theta, footprint_spec, footprint);
 
   // printFootprint(footprint);
 
@@ -177,6 +214,58 @@ double CollisionChecker::pointCost(int x, int y)
   }
 
   return cost;
+}
+
+bool
+CollisionChecker::getRobotPose(geometry_msgs::msg::PoseStamped & global_pose) const
+{
+  tf2::toMsg(tf2::Transform::getIdentity(), global_pose.pose);
+  geometry_msgs::msg::PoseStamped robot_pose;
+  tf2::toMsg(tf2::Transform::getIdentity(), robot_pose.pose);
+
+  robot_pose.header.frame_id = robot_base_frame_;
+  robot_pose.header.stamp = rclcpp::Time();
+
+  rclcpp::Time current_time = node_->now();  // save time for checking tf delay later
+  // get the global pose of the robot
+  try {
+    tf_buffer_.transform(robot_pose, global_pose, global_frame_);
+  } catch (tf2::LookupException & ex) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "No Transform available Error looking up robot pose: %s\n", ex.what());
+    return false;
+  } catch (tf2::ConnectivityException & ex) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "Connectivity Error looking up robot pose: %s\n", ex.what());
+    return false;
+  } catch (tf2::ExtrapolationException & ex) {
+    RCLCPP_ERROR(node_->get_logger(),
+      "Extrapolation Error looking up robot pose: %s\n", ex.what());
+    return false;
+  }
+  // check global_pose timeout
+
+  return true;
+}
+
+void CollisionChecker::resetFootprint(
+  const std::vector<geometry_msgs::msg::Point> & oriented_footprint,
+  std::vector<geometry_msgs::msg::Point> & reset_footprint)
+{
+  geometry_msgs::msg::PoseStamped current_pose;
+   if (!getRobotPose(current_pose)) {
+    throw nav_core2::PlannerException("Robot pose unavailable.");
+  }
+  
+  // printPose(current_pose);
+
+  double x = current_pose.pose.position.x;
+  double y = current_pose.pose.position.y;
+  double theta = tf2::getYaw(current_pose.pose.orientation);
+
+  Footprint temp;
+  nav2_costmap_2d::transformFootprint(-x, -y, 0, oriented_footprint, temp);
+  nav2_costmap_2d::transformFootprint(0, 0, -theta, temp, reset_footprint);
 }
 
 }  // namespace dwb_critics

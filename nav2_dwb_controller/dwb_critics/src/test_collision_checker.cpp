@@ -46,6 +46,8 @@
 #include "nav2_costmap_2d/costmap_2d_publisher.hpp"
 #include "nav2_util/node_utils.hpp"
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2/transform_datatypes.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #include "tf2/utils.h"
@@ -62,24 +64,33 @@ public:
   TestCollisionChecker(
     rclcpp::Node::SharedPtr node,
     std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub,
-    std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub)
-  : CollisionChecker(node, costmap_sub, footprint_sub),
+    std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub,
+    tf2_ros::Buffer & tf_buffer)
+  : CollisionChecker(node, costmap_sub, footprint_sub, tf_buffer),
     node_(node),
     layers_("frame", false, false),
-    new_pose_received_(true)
+    new_pose_received_(true),
+    tf_(tf_buffer)
   {
     node_->get_parameter_or<std::string>("global_frame", global_frame_, std::string("map"));
 
-    tf2_ros::Buffer tf(node_->get_clock());
+    // This empty transform is added to satisfy the constructor of
+    // Costmap2DROS, which waits for the transform from map to base_link
+    // to become available.
+    base_rel_map.transform = tf2::toMsg(tf2::Transform::getIdentity());
+    base_rel_map.child_frame_id = "base_link";
+    base_rel_map.header.frame_id = "map";
+    base_rel_map.header.stamp = node_->now();
+    tf_.setTransform(base_rel_map, "collision_checker_test");
 
     // Add Static Layer
     nav2_costmap_2d::StaticLayer * slayer = new nav2_costmap_2d::StaticLayer();
     layers_.addPlugin(std::shared_ptr<nav2_costmap_2d::Layer>(slayer));
-    slayer->initialize(&layers_, "static", &tf, node_);
+    slayer->initialize(&layers_, "static", &tf_, node_);
 
     // Add Inflation Layer
     nav2_costmap_2d::InflationLayer * ilayer = new nav2_costmap_2d::InflationLayer();
-    ilayer->initialize(&layers_, "inflation", &tf, node_);
+    ilayer->initialize(&layers_, "inflation", &tf_, node_);
     std::shared_ptr<nav2_costmap_2d::Layer> ipointer(ilayer);
     layers_.addPlugin(ipointer);
 
@@ -90,7 +101,7 @@ public:
       footprint_sub_->getTopicName(), rmw_qos_profile_default);
 
     costmap_pub_ = new nav2_costmap_2d::Costmap2DPublisher(node_,
-        layers_.getCostmap(), global_frame_, costmap_sub_->getTopicName(), true);
+        layers_.getCostmap(), global_frame_, "costmap", true);
   }
 
   ~TestCollisionChecker() {}
@@ -144,7 +155,7 @@ public:
       // }
     };
 
-    timer_ = node_->create_wall_timer(1s, timer_callback); 
+    timer_ = node_->create_wall_timer(0.2s, timer_callback); 
   }
 
   std::vector<geometry_msgs::msg::Point> setRadii(
@@ -192,6 +203,14 @@ protected:
     current_pose_.x = x_;
     current_pose_.y = y_;
     current_pose_.theta = yaw_;
+
+    // base_rel_map.transform = tf2::toMsg(tf2::Transform::getIdentity());
+    tf2::Transform transform;
+    tf2::fromMsg(msg->pose.pose, transform);
+    base_rel_map.transform = tf2::toMsg(transform);
+    base_rel_map.header.stamp = node_->now();
+    tf_.setTransform(base_rel_map, "collision_checker_test");
+
     new_pose_received_ = true;
   }
 
@@ -206,6 +225,8 @@ protected:
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pose_sub_;
   geometry_msgs::msg::Pose2D current_pose_;
   bool new_pose_received_;
+  geometry_msgs::msg::TransformStamped base_rel_map;
+  tf2_ros::Buffer & tf_;
 };
 
 }  // namespace dwb_critics
@@ -231,7 +252,7 @@ int main(int argc, char ** argv)
   node->declare_parameter("pose_y");
   node->declare_parameter("pose_theta");
 
-  node->get_parameter_or<std::string>("costmap_topic", costmap_topic, "costmap");
+  node->get_parameter_or<std::string>("costmap_topic", costmap_topic, "costmap_raw");
   node->get_parameter_or<std::string>("footprint_topic", footprint_topic, "footprint"); 
   node->get_parameter_or<double>("robot_radius", robot_radius, 1.0);
   node->get_parameter_or<double>("footprint_padding", footprint_padding, 0.0);
@@ -241,15 +262,26 @@ int main(int argc, char ** argv)
 
   std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub_;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener;
+
+
 
   try
   {
+    tf_buffer = std::make_shared<tf2_ros::Buffer>(node->get_clock());
+    // tf_buffer->setUsingDedicatedThread(true);
+    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
+    // tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer, node, false);
+
     costmap_sub_ = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(node, costmap_topic);
     footprint_sub_ = std::make_shared<nav2_costmap_2d::FootprintSubscriber>(node, footprint_topic);
-    dwb_critics::TestCollisionChecker MyTest(node, costmap_sub_, footprint_sub_);
+
+    dwb_critics::TestCollisionChecker MyTest(node, costmap_sub_, footprint_sub_, *tf_buffer);
+
     MyTest.setPose(x,y,yaw);
     // MyTest.setFootprint(footprint_padding, robot_radius);
-    MyTest.setFootprint(MyTest.setRadii(1.0, 1.0));
+    MyTest.setFootprint(MyTest.setRadii(0.75, 0.75));
     MyTest.publish();
     rclcpp::spin(node);
   }

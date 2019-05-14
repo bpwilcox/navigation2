@@ -60,9 +60,9 @@ Costmap2DPublisher::Costmap2DPublisher(
   custom_qos_profile.reliability = RMW_QOS_POLICY_RELIABILITY_RELIABLE;
 
   // TODO(bpwilcox): port onNewSubscription functionality for publisher
-  costmap_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name + "_rviz",
+  costmap_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name,
       custom_qos_profile);
-  costmap_raw_pub_ = ros_node->create_publisher<nav2_msgs::msg::Costmap>(topic_name,
+  costmap_raw_pub_ = ros_node->create_publisher<nav2_msgs::msg::Costmap>(topic_name + "_raw",
       custom_qos_profile);  
   costmap_update_pub_ = ros_node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
     topic_name + "_updates", custom_qos_profile);

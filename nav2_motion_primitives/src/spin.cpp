@@ -33,8 +33,11 @@ namespace nav2_motion_primitives
 {
 
 Spin::Spin(rclcpp::Node::SharedPtr & node)
-: MotionPrimitive<nav2_tasks::SpinCommand, nav2_tasks::SpinResult>(node)
+: MotionPrimitive<nav2_tasks::SpinCommand, nav2_tasks::SpinResult>(node),
+  tfBuffer_(node->get_clock()),
+  tfListener_(tfBuffer_)
 {
+  
   // TODO(orduno) #378 Pull values from the robot
   max_rotational_vel_ = 1.0;
   min_rotational_vel_ = 0.4;
@@ -42,12 +45,14 @@ Spin::Spin(rclcpp::Node::SharedPtr & node)
   goal_tolerance_angle_ = 0.10;
   start_yaw_ = 0.0;
 
+  tfBuffer_.setUsingDedicatedThread(true);
+
   std::string costmap_topic, footprint_topic;
   node->get_parameter_or<std::string>("costmap_topic", costmap_topic, "local_costmap/costmap_raw");
   node->get_parameter_or<std::string>("footprint_topic", footprint_topic, "local_costmap/footprint");
   costmap_sub_ = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(node, costmap_topic);
   footprint_sub_ = std::make_shared<nav2_costmap_2d::FootprintSubscriber>(node, footprint_topic);
-  collision_checker_ = std::make_shared<dwb_critics::CollisionChecker>(node, costmap_sub_, footprint_sub_);
+  collision_checker_ = std::make_shared<dwb_critics::CollisionChecker>(node, costmap_sub_, footprint_sub_, tfBuffer_);
 }
 
 Spin::~Spin()
