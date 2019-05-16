@@ -160,7 +160,9 @@ void Costmap2DPublisher::prepareCostmap()
 
 void Costmap2DPublisher::publishCostmap()
 {
-  if (node_->count_subscribers(topic_name_) == 0) {
+  if (node_->count_subscribers(topic_name_) == 0 &&
+    node_->count_subscribers(topic_name_ + "_raw") == 0) 
+  {
     // No subscribers, so why do any work?
     return;
   }
