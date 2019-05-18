@@ -61,9 +61,9 @@ Costmap2DPublisher::Costmap2DPublisher(
 
   // TODO(bpwilcox): port onNewSubscription functionality for publisher
   costmap_pub_ = ros_node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name,
-    custom_qos_profile);
+      custom_qos_profile);
   costmap_raw_pub_ = ros_node->create_publisher<nav2_msgs::msg::Costmap>(topic_name + "_raw",
-    custom_qos_profile);
+      custom_qos_profile);
   costmap_update_pub_ = ros_node->create_publisher<map_msgs::msg::OccupancyGridUpdate>(
     topic_name + "_updates", custom_qos_profile);
 
@@ -161,12 +161,12 @@ void Costmap2DPublisher::prepareCostmap()
 void Costmap2DPublisher::publishCostmap()
 {
   if (node_->count_subscribers(topic_name_) == 0 &&
-    node_->count_subscribers(topic_name_ + "_raw") == 0) 
+    node_->count_subscribers(topic_name_ + "_raw") == 0)
   {
     // No subscribers, so why do any work?
     return;
   }
-  // Always publish raw costmap 
+  // Always publish raw costmap
   prepareCostmap();
   costmap_raw_pub_->publish(costmap_raw_);
 
