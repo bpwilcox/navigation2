@@ -75,7 +75,7 @@ Costmap2DROS::Costmap2DROS(const std::string & name, tf2_ros::Buffer & tf)
   // Set Parameters if not set
   set_parameter_if_not_set("transform_tolerance", 0.3);
   set_parameter_if_not_set("update_frequency", 5.0);
-  set_parameter_if_not_set("publish_frequency", 1.0);
+  set_parameter_if_not_set("publish_frequency", 5.0);
   set_parameter_if_not_set("width", 10);
   set_parameter_if_not_set("height", 10);
   set_parameter_if_not_set("resolution", 0.1);

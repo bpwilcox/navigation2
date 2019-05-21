@@ -88,6 +88,25 @@ nav2_tasks::TaskStatus Spin::timedSpin()
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
   cmd_vel.angular.z = 0.5;
+
+  geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr current_pose;
+
+  if (!robot_->getCurrentPose(current_pose)) {
+    RCLCPP_ERROR(node_->get_logger(), "Current robot pose is not available.");
+    return TaskStatus::FAILED;
+  }
+
+  geometry_msgs::msg::Pose2D pose2d;
+  pose2d.x = current_pose->pose.pose.position.x;
+  pose2d.y = current_pose->pose.pose.position.y;
+  pose2d.theta = tf2::getYaw(current_pose->pose.pose.orientation) + cmd_vel.angular.z * (1/cycle_frequency_);
+
+  if (!collision_checker_->isCollisionFree(pose2d))
+  {
+    RCLCPP_ERROR(node_->get_logger(), "Cannot safely execute spin without collision.");
+    return TaskStatus::FAILED;    
+  }
+
   robot_->sendVelocity(cmd_vel);
 
   // TODO(orduno) #423 fixed time

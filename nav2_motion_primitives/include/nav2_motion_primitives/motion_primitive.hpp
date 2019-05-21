@@ -27,6 +27,9 @@
 #include "nav2_tasks/task_status.hpp"
 #include "nav2_tasks/task_server.hpp"
 #include "nav2_robot/robot.hpp"
+#include "nav2_costmap_2d/collision_checker.hpp"
+#include "nav2_costmap_2d/costmap_subscriber.hpp"
+#include "nav2_costmap_2d/footprint_subscriber.hpp"
 
 namespace nav2_motion_primitives
 {
@@ -42,10 +45,20 @@ class MotionPrimitive
 public:
   explicit MotionPrimitive(rclcpp::Node::SharedPtr & node)
   : node_(node),
+    tfBuffer_(node->get_clock()),
+    tfListener_(tfBuffer_),
+    cycle_frequency_(10),
     task_server_(nullptr),
     taskName_(nav2_tasks::getTaskName<CommandMsg, ResultMsg>())
   {
     robot_ = std::make_unique<nav2_robot::Robot>(node);
+
+    std::string costmap_topic, footprint_topic;
+    node->get_parameter_or<std::string>("costmap_topic", costmap_topic, "local_costmap/costmap_raw");
+    node->get_parameter_or<std::string>("footprint_topic", footprint_topic, "local_costmap/footprint");
+    costmap_sub_ = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(node, costmap_topic);
+    footprint_sub_ = std::make_shared<nav2_costmap_2d::FootprintSubscriber>(node, footprint_topic);
+    collision_checker_ = std::make_shared<nav2_costmap_2d::CollisionChecker>(node, costmap_sub_, footprint_sub_, tfBuffer_);
 
     task_server_ = std::make_unique<nav2_tasks::TaskServer<CommandMsg, ResultMsg>>(node, false);
 
@@ -103,7 +116,7 @@ protected:
 
     auto status = nav2_tasks::TaskStatus::FAILED;
 
-    rclcpp::Rate loop_rate(10);
+    rclcpp::Rate loop_rate(cycle_frequency_);
     while (rclcpp::ok()) {
       if (task_server_->cancelRequested()) {
         RCLCPP_INFO(node_->get_logger(), "%s cancelled", taskName_.c_str());
@@ -158,6 +171,13 @@ protected:
   }
 
   rclcpp::Node::SharedPtr node_;
+  std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub_;
+  std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub_;
+  std::shared_ptr<nav2_costmap_2d::CollisionChecker> collision_checker_;
+  tf2_ros::Buffer tfBuffer_;
+  tf2_ros::TransformListener tfListener_;
+
+  double cycle_frequency_;
 
   std::shared_ptr<nav2_robot::Robot> robot_;
 

@@ -13,6 +13,7 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav2_costmap_2d REQUIRED)
 
 nav2_package()
 
@@ -34,6 +35,7 @@ set(dependencies
   tf2
   tf2_geometry_msgs
   geometry_msgs
+  nav2_costmap_2d
 )
 
 # Library

@@ -88,6 +88,24 @@ nav2_tasks::TaskStatus BackUp::controlledBackup()
   }
   // TODO(mhpanah): cmd_vel value should be passed as a parameter
   command_x_ < 0 ? cmd_vel.linear.x = -0.025 : cmd_vel.linear.x = 0.025;
+
+  geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr current_pose;
+  if (!robot_->getCurrentPose(current_pose)) {
+    RCLCPP_ERROR(node_->get_logger(), "Current robot pose is not available.");
+    return TaskStatus::FAILED;
+  }
+
+  geometry_msgs::msg::Pose2D pose2d;
+  pose2d.x = current_pose->pose.pose.position.x + cmd_vel.linear.z * (1/cycle_frequency_);
+  pose2d.y = current_pose->pose.pose.position.y;
+  pose2d.theta = tf2::getYaw(current_pose->pose.pose.orientation);
+
+  if (!collision_checker_->isCollisionFree(pose2d))
+  {
+    RCLCPP_ERROR(node_->get_logger(), "Cannot safely execute spin without collision.");
+    return TaskStatus::FAILED;    
+  }
+
   robot_->sendVelocity(cmd_vel);
 
   return TaskStatus::RUNNING;
