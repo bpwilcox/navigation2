@@ -19,6 +19,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/collision_checker.hpp"
 #include "nav2_costmap_2d/costmap_2d.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
 #include "nav2_costmap_2d/layered_costmap.hpp"
 #include "nav2_costmap_2d/static_layer.hpp"
 #include "nav2_costmap_2d/inflation_layer.hpp"
@@ -43,31 +44,13 @@ public:
 };
 RclCppFixture g_rclcppfixture;
 
-class TestCollisionChecker : public nav2_util::LifecycleNode
+class TestCollisionChecker : public nav2_costmap_2d::Costmap2DROS
 {
 public:
   TestCollisionChecker(std::string name)
-  : LifecycleNode(name, "", true),
-    costmap_received_(false),
-    global_frame_("map")
+  : Costmap2DROS(name),
+    costmap_received_(false)
   {
-    // Declare non-plugin specific costmap parameters
-    declare_parameter("map_topic", rclcpp::ParameterValue(std::string("/map")));
-    declare_parameter("track_unknown_space", rclcpp::ParameterValue(false));
-    declare_parameter("use_maximum", rclcpp::ParameterValue(false));
-    declare_parameter("lethal_cost_threshold", rclcpp::ParameterValue(100));
-    declare_parameter("unknown_cost_value",
-      rclcpp::ParameterValue(static_cast<unsigned char>(0xff)));
-    declare_parameter("trinary_costmap", rclcpp::ParameterValue(true));    
-  }
-
-  nav2_util::CallbackReturn
-  on_configure(const rclcpp_lifecycle::State & /*state*/)
-  {
-    RCLCPP_INFO(get_logger(), "Configuring");
-    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
     std::string costmap_topic = "costmap_raw";
     std::string footprint_topic = "footprint";
 
@@ -77,87 +60,99 @@ public:
       rclcpp_node_, footprint_topic);
     collision_checker_ = std::make_unique<nav2_costmap_2d::CollisionChecker>(
       rclcpp_node_, costmap_sub_, footprint_sub_, *tf_buffer_);
-
-    base_rel_map.transform = tf2::toMsg(tf2::Transform::getIdentity());
-    base_rel_map.child_frame_id = "base_link";
-    base_rel_map.header.frame_id = "map";
-    base_rel_map.header.stamp = now();
-    tf_buffer_->setTransform(base_rel_map, "collision_checker_test");
-
-
-    layers_ = new nav2_costmap_2d::LayeredCostmap("frame", false, false);
-    // Add Static Layer
-    addStaticLayer(*layers_, *tf_buffer_, shared_from_this());
-
-    // Add Inflation Layer
-    nav2_costmap_2d::InflationLayer * ilayer = addInflationLayer(
-      *layers_, *tf_buffer_, shared_from_this());
-
-    footprint_pub_ = create_publisher<geometry_msgs::msg::PolygonStamped>(
-      footprint_topic, rclcpp::SystemDefaultsQoS());
-
-    costmap_pub_ = std::make_unique<nav2_costmap_2d::Costmap2DPublisher>(shared_from_this(),
-        layers_->getCostmap(), global_frame_, "costmap", true);
-
-    return nav2_util::CallbackReturn::SUCCESS;
   }
 
-  nav2_util::CallbackReturn
-  on_activate(const rclcpp_lifecycle::State & /*state*/)
+  void initialize()
   {
-    RCLCPP_INFO(get_logger(), "Activating");
-
-    costmap_pub_->on_activate();
-    footprint_pub_->on_activate();
-
-    auto timer_callback = [this]() -> void
-      {
-        try {
-          costmap_sub_->getCostmap();
-          costmap_received_ = true;
-        } catch (const std::runtime_error & e) {
-          costmap_received_ = false;
-        }
-        publishFootprint();
-        publishCostmap();
-      };
-
-    timer_ = create_wall_timer(0.1s, timer_callback);
-
-    return nav2_util::CallbackReturn::SUCCESS;
+    on_configure(get_current_state());
+    base_rel_map_.transform = tf2::toMsg(tf2::Transform::getIdentity());
+    base_rel_map_.child_frame_id = "base_link";
+    base_rel_map_.header.frame_id = "map";
+    base_rel_map_.header.stamp = rclcpp_node_->now();
+    tf_buffer_->setTransform(base_rel_map_, "collision_checker_test");
+    transform_tolerance_ = 100;
+    on_activate(get_current_state());
   }
+  // nav2_util::CallbackReturn
+  // on_configure(const rclcpp_lifecycle::State & /*state*/)
+  // {
+  //   RCLCPP_INFO(get_logger(), "Configuring");
 
-  nav2_util::CallbackReturn
-  on_deactivate(const rclcpp_lifecycle::State & /*state*/)
-  {
-    RCLCPP_INFO(get_logger(), "Deactivating");
+  //   std::string costmap_topic = "costmap_raw";
+  //   std::string footprint_topic = "footprint";
 
-    costmap_pub_->on_deactivate();
-    footprint_pub_->on_deactivate();
-    timer_->cancel();
+  //   costmap_sub_ = std::make_shared<nav2_costmap_2d::CostmapSubscriber>(
+  //     rclcpp_node_, costmap_topic);
+  //   footprint_sub_ = std::make_shared<nav2_costmap_2d::FootprintSubscriber>(
+  //     rclcpp_node_, footprint_topic);
+  //   collision_checker_ = std::make_unique<nav2_costmap_2d::CollisionChecker>(
+  //     rclcpp_node_, costmap_sub_, footprint_sub_, *tf_buffer_);
 
-    return nav2_util::CallbackReturn::SUCCESS;
-  }
+  //   base_rel_map.transform = tf2::toMsg(tf2::Transform::getIdentity());
+  //   base_rel_map.child_frame_id = "base_link";
+  //   base_rel_map.header.frame_id = "map";
+  //   base_rel_map.header.stamp = now();
+  //   tf_buffer_->setTransform(base_rel_map, "collision_checker_test");
 
-  nav2_util::CallbackReturn
-  on_cleanup(const rclcpp_lifecycle::State & /*state*/)
-  {
-    RCLCPP_INFO(get_logger(), "Cleaning Up");
-    delete layers_;
-    layers_ = nullptr;
+  //   return nav2_util::CallbackReturn::SUCCESS;
+  // }
 
-    timer_->reset();
-    tf_buffer_.reset();
-    tf_listener_.reset();
+  // nav2_util::CallbackReturn
+  // on_activate(const rclcpp_lifecycle::State & /*state*/)
+  // {
+  //   RCLCPP_INFO(get_logger(), "Activating");
 
-    footprint_sub_.reset();
-    footprint_pub_.reset();
+  //   costmap_pub_->on_activate();
+  //   footprint_pub_->on_activate();
 
-    costmap_sub_.reset();
-    costmap_pub_.reset();
+  //   auto timer_callback = [this]() -> void
+  //     {
+  //       try {
+  //         costmap_sub_->getCostmap();
+  //         costmap_received_ = true;
+  //       } catch (const std::runtime_error & e) {
+  //         costmap_received_ = false;
+  //       }
+  //       publishFootprint();
+  //       publishCostmap();
+  //     };
 
-    return nav2_util::CallbackReturn::SUCCESS;
-  }
+  //   timer_ = create_wall_timer(0.1s, timer_callback);
+
+  //   return nav2_util::CallbackReturn::SUCCESS;
+  // }
+
+  // nav2_util::CallbackReturn
+  // on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+  // {
+  //   RCLCPP_INFO(get_logger(), "Deactivating");
+
+  //   costmap_pub_->on_deactivate();
+  //   footprint_pub_->on_deactivate();
+  //   timer_->cancel();
+
+  //   return nav2_util::CallbackReturn::SUCCESS;
+  // }
+
+  // nav2_util::CallbackReturn
+  // on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+  // {
+  //   RCLCPP_INFO(get_logger(), "Cleaning Up");
+  //   delete layers_;
+  //   layers_ = nullptr;
+
+  //   timer_->reset();
+  //   tf_buffer_.reset();
+  //   tf_listener_.reset();
+
+  //   footprint_sub_.reset();
+  //   footprint_pub_.reset();
+
+  //   costmap_sub_.reset();
+  //   costmap_pub_.reset();
+
+  //   return nav2_util::CallbackReturn::SUCCESS;
+  // }
 
   ~TestCollisionChecker() {}
 
@@ -172,7 +167,12 @@ public:
     costmap_received_ = false;
 
     while (!costmap_received_) {
-      rclcpp::spin_some(get_node_base_interface());
+      try {
+        costmap_sub_->getCostmap();
+        costmap_received_ = true;
+      } catch (const std::runtime_error & e) {
+        costmap_received_ = false;
+      }      
     }
 
     return collision_checker_->isCollisionFree(pose);
@@ -180,11 +180,8 @@ public:
 
   void setFootprint(double footprint_padding, double robot_radius)
   {
-    std::vector<geometry_msgs::msg::Point> new_footprint;
-    new_footprint = nav2_costmap_2d::makeFootprintFromRadius(robot_radius);
-    nav2_costmap_2d::padFootprint(new_footprint, footprint_padding);
-    footprint_ = new_footprint;
-    layers_->setFootprint(footprint_);
+    footprint_padding_ = footprint_padding;
+    setRobotFootprint(nav2_costmap_2d::makeFootprintFromRadius(robot_radius));
   }
 
 protected:
@@ -204,39 +201,19 @@ protected:
 
     tf2::Transform transform;
     tf2::fromMsg(pose, transform);
-    base_rel_map.transform = tf2::toMsg(transform);
-    base_rel_map.header.stamp = now();
-    tf_buffer_->setTransform(base_rel_map, "collision_checker_test");
+    base_rel_map_.transform = tf2::toMsg(transform);
+    base_rel_map_.header.stamp = rclcpp_node_->now();
+    tf_buffer_->setTransform(base_rel_map_, "collision_checker_test");
   }
-
-  void publishFootprint()
-  {
-    geometry_msgs::msg::PolygonStamped oriented_footprint;
-    oriented_footprint.header.frame_id = global_frame_;
-    oriented_footprint.header.stamp = now();
-    nav2_costmap_2d::transformFootprint(x_, y_, yaw_, footprint_, oriented_footprint);
-    footprint_pub_->publish(oriented_footprint);
-  }
-
-  void publishCostmap()
-  {
-    layers_->updateMap(x_, y_, yaw_);
-    costmap_pub_->publishCostmap();
-  }
-
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+ 
   std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub_;
   std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub_;
   std::unique_ptr<nav2_costmap_2d::CollisionChecker> collision_checker_;
   double x_, y_, yaw_;
-  nav2_costmap_2d::LayeredCostmap * layers_{nullptr};
-  rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PolygonStamped>::SharedPtr footprint_pub_;
-  std::unique_ptr<nav2_costmap_2d::Costmap2DPublisher> costmap_pub_;
   std::vector<geometry_msgs::msg::Point> footprint_;
   std::string global_frame_;
   bool costmap_received_;
-  geometry_msgs::msg::TransformStamped base_rel_map;
+  geometry_msgs::msg::TransformStamped base_rel_map_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
@@ -246,8 +223,7 @@ public:
   TestNode()
   {
     collision_checker_ = std::make_shared<TestCollisionChecker>("test_collision_checker");
-    collision_checker_->on_configure(collision_checker_->get_current_state());
-    collision_checker_->on_activate(collision_checker_->get_current_state());
+    collision_checker_->initialize();
   }
 
   ~TestNode()
