@@ -13,14 +13,16 @@
 // limitations under the License.
 
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_util/lifecycle_parameters_client.hpp"
+#include "nav2_util/lifecycle_node.hpp"
 
 using namespace std::chrono_literals;
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("robot_param_client");
-  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(node, "robot_server"); 
+  auto node = nav2_util::LifecycleNode::make_shared("robot_param_client");
+  auto parameters_client = std::make_shared<nav2_util::LifecycleParametersClient>(node, "robot_server");
   while (!parameters_client->wait_for_service(1s)) {
     if (!rclcpp::ok()) {
       RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");

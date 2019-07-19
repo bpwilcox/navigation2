@@ -84,7 +84,6 @@ AmclNode::AmclNode()
   declare_parameter("recovery_alpha_fast", rclcpp::ParameterValue(0.0));
   declare_parameter("recovery_alpha_slow", rclcpp::ParameterValue(0.0));
   declare_parameter("resample_interval", rclcpp::ParameterValue(1));
-  declare_parameter("robot_model_type", rclcpp::ParameterValue(std::string("differential")));
   declare_parameter("save_pose_rate", rclcpp::ParameterValue(0.5));
   declare_parameter("sigma_hit", rclcpp::ParameterValue(0.2));
   declare_parameter("tf_broadcast", rclcpp::ParameterValue(true));
@@ -107,6 +106,11 @@ AmclNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
+  parameter_client_ = std::make_unique<nav2_util::LifecycleParametersClient>(
+    shared_from_this(), "robot_server");
+
+  RCLCPP_INFO(get_logger(), "Parameter client created");
+ 
   initParameters();
   initTransforms();
   initMessageFilters();
@@ -195,6 +199,9 @@ AmclNode::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   map_free(map_);
   map_ = nullptr;
   free_space_indices.resize(0);
+
+  // Parameter Client
+  parameter_client_.reset();
 
   // Transforms
   tf_broadcaster_.reset();
@@ -878,6 +885,11 @@ AmclNode::initParameters()
   double save_pose_rate;
   double tmp_tol;
 
+  robot_model_type_ = parameter_client_->get_parameter<std::string>(
+    "robot_model_type", "differential");
+
+  RCLCPP_INFO(get_logger(), "Parameter from robot server received");
+
   get_parameter("alpha1", alpha1_);
   get_parameter("alpha2", alpha2_);
   get_parameter("alpha3", alpha3_);
@@ -903,7 +915,6 @@ AmclNode::initParameters()
   get_parameter("recovery_alpha_fast", alpha_fast_);
   get_parameter("recovery_alpha_slow", alpha_slow_);
   get_parameter("resample_interval", resample_interval_);
-  get_parameter("robot_model_type", robot_model_type_);
   get_parameter("save_pose_rate", save_pose_rate);
   get_parameter("sigma_hit", sigma_hit_);
   get_parameter("tf_broadcast", tf_broadcast_);
