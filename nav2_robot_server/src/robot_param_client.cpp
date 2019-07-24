@@ -31,13 +31,13 @@ int main(int argc, char ** argv)
     RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
   }
 
-  std::stringstream ss;
+  // std::stringstream ss;
   // Get a few of the parameters just set.
-  for (auto & parameter : parameters_client->get_parameters({"robot_radius", "min_speed_xy"})) {
-    ss << "\nParameter name: " << parameter.get_name();
-    ss << "\nParameter value (" << parameter.get_type_name() << "): " <<
-      parameter.value_to_string();
-  }
+  // for (auto & parameter : parameters_client->get_parameters({"robot_radius", "min_speed_xy"})) {
+  //   ss << "\nParameter name: " << parameter.get_name();
+  //   ss << "\nParameter value (" << parameter.get_type_name() << "): " <<
+  //     parameter.value_to_string();
+  // }
 
   auto radius = parameters_client->get_parameter<double>("robot_radius");
   std::string type = parameters_client->get_parameter<std::string>("robot_model_type");
@@ -46,7 +46,7 @@ int main(int argc, char ** argv)
   RCLCPP_INFO(node->get_logger(), "name: %s, type: %s, radius: %f",
     name.c_str(), type.c_str(), radius);
 
-  RCLCPP_INFO(node->get_logger(), ss.str().c_str());
+  // RCLCPP_INFO(node->get_logger(), ss.str().c_str());
   
   rclcpp::shutdown();
 

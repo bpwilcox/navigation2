@@ -21,7 +21,16 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<nav2_amcl::AmclNode>();
-  rclcpp::spin(node->get_node_base_interface());
+
+  const unsigned number_of_threads = 2;
+  const bool yield_thread_before_execute = false;
+
+  rclcpp::executors::MultiThreadedExecutor executor(
+    rclcpp::executor::ExecutorArgs(), number_of_threads, yield_thread_before_execute);
+
+  executor.add_node(node->get_node_base_interface());
+  executor.spin();
+  // rclcpp::spin(node->get_node_base_interface());
   rclcpp::shutdown();
 
   return 0;
