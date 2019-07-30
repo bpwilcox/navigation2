@@ -1112,6 +1112,12 @@ void
 AmclNode::initPubSub()
 {
   RCLCPP_INFO(get_logger(), "initPubSub");
+  auto alloc1 = rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>();
+  auto alloc2 = rclcpp::SubscriptionOptionsWithAllocator<std::allocator<void>>();
+  auto cb_grp1 = create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);
+  alloc1.callback_group = cb_grp1;
+  alloc2.callback_group = cb_grp1;
+
 
   particlecloud_pub_ = create_publisher<geometry_msgs::msg::PoseArray>("particlecloud",
       rclcpp::SensorDataQoS());
@@ -1121,7 +1127,7 @@ AmclNode::initPubSub()
 
   initial_pose_sub_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "initialpose", rclcpp::SystemDefaultsQoS(),
-    std::bind(&AmclNode::initialPoseReceived, this, std::placeholders::_1));
+    std::bind(&AmclNode::initialPoseReceived, this, std::placeholders::_1), alloc1);
 
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
     "map", rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable(),

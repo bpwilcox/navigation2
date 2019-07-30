@@ -41,6 +41,21 @@ public:
     node_base_(node->get_node_base_interface())
   {}
   
+  LifecycleParametersClient(
+    rclcpp::Node::SharedPtr node,
+    const std::string & remote_node_name = "",
+    const rmw_qos_profile_t & qos_profile = rmw_qos_profile_parameters)
+  : rclcpp::AsyncParametersClient(
+      node->get_node_base_interface(),
+      node->get_node_topics_interface(),
+      node->get_node_graph_interface(),
+      node->get_node_services_interface(),
+      remote_node_name,
+      qos_profile,
+      node->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant)),
+    node_base_(node->get_node_base_interface())
+  {}
+
   template<typename T>
   T
   get_parameter_impl(
@@ -52,8 +67,18 @@ public:
 
     if (!nodeIsSpinable()) {
       RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "Node not spinable");
-      auto status = f.wait_for(std::chrono::seconds::max());
+      // f.wait();
+      auto status = f.wait_for(std::chrono::seconds(3));
+      if (status == std::future_status::deferred) {
+          std::cout << "deferred\n";
+      } else if (status == std::future_status::timeout) {
+          std::cout << "timeout\n";
+      } else if (status == std::future_status::ready) {
+          std::cout << "ready!\n";
+      }
+
       if (status != std::future_status::ready) {
+        RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "future not ready");
         return parameter_not_found_handler();
       }
     } else {
@@ -67,6 +92,7 @@ public:
     auto vars = f.get();
 
     if ((vars.size() != 1) || (vars[0].get_type() == rclcpp::ParameterType::PARAMETER_NOT_SET)) {
+      RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "parameter not set");
       return parameter_not_found_handler();
     } else {
       return static_cast<T>(vars[0].get_value<T>());
