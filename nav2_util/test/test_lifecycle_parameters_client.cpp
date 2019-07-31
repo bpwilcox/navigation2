@@ -89,6 +89,7 @@ public:
 protected:
   std::unique_ptr<nav2_util::LifecycleParametersClient> parameter_client_;
   std::string robot_model_type_;
+  rclcpp::callback_group::CallbackGroup::SharedPtr group;
 };
 
 class TestNode : public ::testing::Test

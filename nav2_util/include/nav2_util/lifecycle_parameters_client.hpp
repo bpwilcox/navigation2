@@ -68,7 +68,7 @@ public:
     if (!nodeIsSpinable()) {
       RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "Node not spinable");
       // f.wait();
-      auto status = f.wait_for(std::chrono::seconds(3));
+      auto status = f.wait_for(std::chrono::seconds(30));
       if (status == std::future_status::deferred) {
           std::cout << "deferred\n";
       } else if (status == std::future_status::timeout) {
