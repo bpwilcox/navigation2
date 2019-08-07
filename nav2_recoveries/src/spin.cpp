@@ -35,10 +35,21 @@ namespace nav2_recoveries
 Spin::Spin(rclcpp::Node::SharedPtr & node)
 : Recovery<SpinAction>(node, "Spin")
 {
-  // TODO(orduno) #378 Pull values from the robot
-  max_rotational_vel_ = 1.0;
-  min_rotational_vel_ = 0.4;
-  rotational_acc_lim_ = 3.2;
+  parameter_client_ = std::make_unique<nav2_util::ParametersClient>(
+    node, "/parameter_server");
+
+  while (!parameter_client_->wait_for_service(1s)) {
+    if (!rclcpp::ok()) {
+      RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
+      return;
+    }
+    RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
+  }
+
+  max_rotational_vel_ = parameter_client_->get_parameter<double>("max_vel_theta", 1.0);
+  min_rotational_vel_ = parameter_client_->get_parameter<double>("min_in_place_vel_theta", 0.4);
+  rotational_acc_lim_ = parameter_client_->get_parameter<double>("acc_lim_theta", 3.2);
+
   prev_yaw_ = 0.0;
   delta_yaw_ = 0.0;
   relative_yaw_ = 0.0;

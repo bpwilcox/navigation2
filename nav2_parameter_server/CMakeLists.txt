@@ -1,18 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
-project(nav2_robot_server)
+project(nav2_parameter_server)
 
 find_package(ament_cmake REQUIRED)
 find_package(nav2_common REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_lifecycle REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(urdf REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(nav2_msgs REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(nav2_util REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_ros REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
+
 
 nav2_package()
 
@@ -20,49 +14,40 @@ include_directories(
   include
 )
 
-set(executable_name robot_server)
-set(library_name nav2_robot_server)
+set(executable_name parameter_server)
+set(library_name parameter_library)
 
 set(dependencies
   rclcpp
-  rclcpp_lifecycle
-  urdf
-  geometry_msgs
-  nav_msgs
-  nav2_msgs
   nav2_util
-  tf2
-  tf2_ros
-  tf2_geometry_msgs
+  rclcpp_components
 )
 
 add_library(${library_name} SHARED
-  src/robot_server.cpp
+  src/parameter_server.cpp
 )
 
 ament_target_dependencies(${library_name}
   ${dependencies}
 )
 
-add_executable(${executable_name}
-  src/main.cpp
-)
+#add_executable(${executable_name}
+#  src/main.cpp
+#)
 
-ament_target_dependencies(${executable_name}
-  ${dependencies}
-)
+rclcpp_components_register_node(${library_name}
+  PLUGIN "nav2_parameter_server::ParameterServer"
+  EXECUTABLE ${executable_name})
 
-target_link_libraries(${executable_name} ${library_name})
+#ament_target_dependencies(${executable_name}
+#  ${dependencies}
+#)
 
-add_executable(robot_param_client
-  src/robot_param_client.cpp
-)
+#target_link_libraries(${executable_name} ${library_name})
 
-ament_target_dependencies(robot_param_client
-  ${dependencies}
-)
+#install(TARGETS ${executable_name} ${library_name}
 
-install(TARGETS ${executable_name} ${library_name} robot_param_client
+install(TARGETS parameter_library
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}

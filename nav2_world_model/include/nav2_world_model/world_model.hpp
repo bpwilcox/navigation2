@@ -66,7 +66,7 @@ protected:
   static constexpr const char * metadata_layer_{"Master"};
 
   // An executor used to spin the costmap node
-  std::unique_ptr<rclcpp::executors::SingleThreadedExecutor> costmap_executor_;
+  std::unique_ptr<rclcpp::executors::MultiThreadedExecutor> costmap_executor_;
 };
 
 }  // namespace nav2_world_model

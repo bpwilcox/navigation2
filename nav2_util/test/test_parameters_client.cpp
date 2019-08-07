@@ -16,7 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/lifecycle_parameters_client.hpp"
+#include "nav2_util/parameters_client.hpp"
 #include "nav2_util/lifecycle_utils.hpp"
 
 #include "rclcpp/rclcpp.hpp"
@@ -40,15 +40,15 @@ public:
   {
   }
 
-  ~ClientTestNode() 
+  ~ClientTestNode()
   {
   }
 
   nav2_util::CallbackReturn
   on_configure(const rclcpp_lifecycle::State & /*state*/)
   {
-    parameter_client_ = std::make_unique<nav2_util::LifecycleParametersClient>(
-      shared_from_this(), "robot_server");
+    parameter_client_ = std::make_unique<nav2_util::ParametersClient>(
+      shared_from_this(), "/parameter_server");
 
     while (!parameter_client_->wait_for_service(1s)) {
       if (!rclcpp::ok()) {
@@ -87,9 +87,8 @@ public:
   }
 
 protected:
-  std::unique_ptr<nav2_util::LifecycleParametersClient> parameter_client_;
+  std::unique_ptr<nav2_util::ParametersClient> parameter_client_;
   std::string robot_model_type_;
-  rclcpp::callback_group::CallbackGroup::SharedPtr group;
 };
 
 class TestNode : public ::testing::Test
@@ -105,7 +104,7 @@ public:
       rclcpp::executor::ExecutorArgs(), number_of_threads, yield_thread_before_execute);
 
     thread_ = std::make_unique<std::thread>(
-      [&]( rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node) {
+      [&](rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node) {
         executor_->add_node(node);
         executor_->spin();
         executor_->remove_node(node);
@@ -132,4 +131,3 @@ TEST_F(TestNode, GetParameter)
   nav2_util::bringup_lifecycle_nodes(std::vector<std::string>({"test_client_node"}));
   ASSERT_EQ(test_client_node_->get_robot_type(), std::string("differential"));
 }
-

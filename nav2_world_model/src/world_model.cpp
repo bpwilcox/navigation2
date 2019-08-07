@@ -30,18 +30,22 @@ WorldModel::WorldModel()
   costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>("global_costmap");
 
   // Create an executor that will be used to spin the costmap node
-  costmap_executor_ = std::make_unique<rclcpp::executors::SingleThreadedExecutor>();
+  const unsigned number_of_threads = 2;
+  const bool yield_thread_before_execute = false;
+
+  costmap_executor_ = std::make_unique<rclcpp::executors::MultiThreadedExecutor>(
+    rclcpp::executor::ExecutorArgs(), number_of_threads, yield_thread_before_execute);
 
   // Launch a thread to run the costmap node
   costmap_thread_ = std::make_unique<std::thread>(
-    [&](rclcpp_lifecycle::LifecycleNode::SharedPtr node)
+    [&](rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node)
     {
       // TODO(mjeronimo): Once Brian pushes his change upstream to rlcpp executors, we'll
       // be able to provide our own executor to spin(), reducing this to a single line
-      costmap_executor_->add_node(node->get_node_base_interface());
+      costmap_executor_->add_node(node);
       costmap_executor_->spin();
-      costmap_executor_->remove_node(node->get_node_base_interface());
-    }, costmap_ros_);
+      costmap_executor_->remove_node(node);
+    }, costmap_ros_->get_node_base_interface());
 }
 
 WorldModel::~WorldModel()

@@ -32,7 +32,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "message_filters/subscriber.h"
 #include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/lifecycle_parameters_client.hpp"
+#include "nav2_util/parameters_client.hpp"
 #include "nav2_util/motion_model/motion_model.hpp"
 #include "nav2_util/sensors/laser/laser.hpp"
 #include "nav_msgs/srv/set_map.hpp"
@@ -96,7 +96,7 @@ protected:
 #endif
 
   // Parameter client for robot-specific parameters
-  std::unique_ptr<nav2_util::LifecycleParametersClient> parameter_client_;
+  std::unique_ptr<nav2_util::ParametersClient> parameter_client_;
 
   // Transforms
   void initTransforms();

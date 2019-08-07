@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_UTIL__LIFECYCLE_PARAMETERS_CLIENT_HPP_
-#define NAV2_UTIL__LIFECYCLE_PARAMETERS_CLIENT_HPP_
+#ifndef NAV2_UTIL__PARAMETERS_CLIENT_HPP_
+#define NAV2_UTIL__PARAMETERS_CLIENT_HPP_
 
 #include <string>
 
@@ -23,10 +23,10 @@
 namespace nav2_util
 {
 
-class LifecycleParametersClient : public rclcpp::AsyncParametersClient
+class ParametersClient : public rclcpp::AsyncParametersClient
 {
 public:
-  LifecycleParametersClient(
+  ParametersClient(
     nav2_util::LifecycleNode::SharedPtr node,
     const std::string & remote_node_name = "",
     const rmw_qos_profile_t & qos_profile = rmw_qos_profile_parameters)
@@ -40,8 +40,8 @@ public:
       node->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant)),
     node_base_(node->get_node_base_interface())
   {}
-  
-  LifecycleParametersClient(
+
+  ParametersClient(
     rclcpp::Node::SharedPtr node,
     const std::string & remote_node_name = "",
     const rmw_qos_profile_t & qos_profile = rmw_qos_profile_parameters)
@@ -66,19 +66,8 @@ public:
     auto f = get_parameters(names);
 
     if (!nodeIsSpinable()) {
-      RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "Node not spinable");
-      // f.wait();
-      auto status = f.wait_for(std::chrono::seconds(30));
-      if (status == std::future_status::deferred) {
-          std::cout << "deferred\n";
-      } else if (status == std::future_status::timeout) {
-          std::cout << "timeout\n";
-      } else if (status == std::future_status::ready) {
-          std::cout << "ready!\n";
-      }
-
+      auto status = f.wait_for(std::chrono::seconds(1));
       if (status != std::future_status::ready) {
-        RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "future not ready");
         return parameter_not_found_handler();
       }
     } else {
@@ -88,11 +77,12 @@ public:
         return parameter_not_found_handler();
       }
     }
-    
+
     auto vars = f.get();
 
     if ((vars.size() != 1) || (vars[0].get_type() == rclcpp::ParameterType::PARAMETER_NOT_SET)) {
-      RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "parameter not set");
+      RCLCPP_WARN(rclcpp::get_logger("Parameter Client"), "Parameter '%s' not set",
+       parameter_name.c_str());
       return parameter_not_found_handler();
     } else {
       return static_cast<T>(vars[0].get_value<T>());
@@ -114,7 +104,7 @@ public:
   {
     return get_parameter_impl(
       parameter_name,
-      std::function<T()>([]() -> T {throw std::runtime_error("Parameter not set");}));
+      std::function<T()>([parameter_name]() -> T {throw std::runtime_error("Parameter '" + parameter_name + "' is not set");}));
   }
 
   bool nodeIsSpinable() const
@@ -129,4 +119,4 @@ protected:
 
 }  // namespace nav2_util
 
-#endif  // NAV2_UTIL__LIFECYCLE_PARAMETERS_CLIENT_HPP_
+#endif  // NAV2_UTIL__PARAMETERS_CLIENT_HPP_

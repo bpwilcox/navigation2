@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Intel Corporation
+// Copyright (c) 2019 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <memory>
+#include "nav2_parameter_server/parameter_server.hpp"
 
-#include "dwb_controller/dwb_controller.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<dwb_controller::DwbController>();
-
-  const unsigned number_of_threads = 2;
-  const bool yield_thread_before_execute = false;
-
-  rclcpp::executors::MultiThreadedExecutor executor(
-    rclcpp::executor::ExecutorArgs(), number_of_threads, yield_thread_before_execute);
-
-  executor.add_node(node->get_node_base_interface());
-  executor.spin();  rclcpp::shutdown();
+  auto node = std::make_shared<nav2_parameter_server::ParameterServer>();
+  rclcpp::spin(node->get_node_base_interface());
+  rclcpp::shutdown();
 
   return 0;
 }

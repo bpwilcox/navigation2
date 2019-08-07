@@ -22,6 +22,7 @@
 #include "nav2_recoveries/recovery.hpp"
 #include "nav2_msgs/action/spin.hpp"
 #include "geometry_msgs/msg/quaternion.hpp"
+#include "nav2_util/parameters_client.hpp"
 
 namespace nav2_recoveries
 {
@@ -45,6 +46,9 @@ protected:
   double prev_yaw_;
   double delta_yaw_;
   double relative_yaw_;
+
+  // Parameter client for robot-specific parameters
+  std::unique_ptr<nav2_util::ParametersClient> parameter_client_;
 };
 
 }  // namespace nav2_recoveries

@@ -51,6 +51,15 @@ def generate_launch_description():
     configured_params = RewrittenYaml(
         source_file=params_file, rewrites=param_substitutions, convert_types=True)
 
+    global_substitutions = {
+        'use_sim_time': use_sim_time,
+    }
+
+    global_params = RewrittenYaml(
+        source_file='nav2_global_params.yaml', rewrites=global_substitutions, convert_types=True)
+
+    global_params = 'nav2_global_params.yaml'
+
     # Declare the launch arguments
     declare_autostart_cmd = launch.actions.DeclareLaunchArgument(
         'autostart',
@@ -125,6 +134,14 @@ def generate_launch_description():
             ['__params:=', configured_params]],
         cwd=[launch_dir], output='screen')
 
+    start_parameter_server_cmd = launch.actions.ExecuteProcess(
+        cmd=[
+            os.path.join(
+                get_package_prefix('demo_nodes_cpp'),
+                'lib/demo_nodes_cpp/parameter_server'),
+            ['__params:=', robot_params_file]],
+        cwd=[launch_dir], output='screen')
+
     start_rviz_cmd = launch.actions.ExecuteProcess(
         cmd=[os.path.join(get_package_prefix('rviz2'), 'lib/rviz2/rviz2'),
             ['-d', rviz_config_file]],
@@ -148,7 +165,7 @@ def generate_launch_description():
             os.path.join(
                 get_package_prefix('nav2_amcl'),
                 'lib/nav2_amcl/amcl'),
-            ['__params:=', configured_params]],
+            ['__params:=', global_params], ['__params:=', configured_params]],
         cwd=[launch_dir], output='screen')
 
     start_world_model_cmd = launch.actions.ExecuteProcess(
@@ -232,10 +249,11 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(start_rviz_cmd)
     ld.add_action(exit_event_handler)
+    ld.add_action(start_parameter_server_cmd)
 
     # Add the actions to launch all of the navigation nodes
     ld.add_action(start_lifecycle_manager_cmd)
-    ld.add_action(start_robot_server_cmd)
+    # ld.add_action(start_robot_server_cmd)
     ld.add_action(start_map_server_cmd)
     ld.add_action(start_localizer_cmd)
     ld.add_action(start_world_model_cmd)

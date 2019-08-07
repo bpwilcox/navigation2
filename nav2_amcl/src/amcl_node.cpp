@@ -106,17 +106,15 @@ AmclNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
-  parameter_client_ = std::make_unique<nav2_util::LifecycleParametersClient>(
-    shared_from_this(), "robot_server");
+  parameter_client_ = std::make_unique<nav2_util::ParametersClient>(
+    shared_from_this(), "/parameter_server");
 
-  RCLCPP_INFO(get_logger(), "Parameter client created");
- 
   while (!parameter_client_->wait_for_service(1s)) {
-  if (!rclcpp::ok()) {
-    RCLCPP_ERROR(get_logger(), "Interrupted while waiting for the service. Exiting.");
-    return nav2_util::CallbackReturn::FAILURE;
-  }
-  RCLCPP_INFO(get_logger(), "service not available, waiting again...");
+    if (!rclcpp::ok()) {
+      RCLCPP_ERROR(get_logger(), "Interrupted while waiting for the service. Exiting.");
+      return nav2_util::CallbackReturn::FAILURE;
+    }
+    RCLCPP_INFO(get_logger(), "service not available, waiting again...");
   }
 
   initParameters();
@@ -893,10 +891,9 @@ AmclNode::initParameters()
   double save_pose_rate;
   double tmp_tol;
 
+  // Get parameters from remote parameter server
   robot_model_type_ = parameter_client_->get_parameter<std::string>(
-    "robot_model_type", "diff");
-
-  RCLCPP_INFO(get_logger(), "Parameter from robot server received, %s", robot_model_type_.c_str());
+    "robot_model_type", "differential");
 
   get_parameter("alpha1", alpha1_);
   get_parameter("alpha2", alpha2_);

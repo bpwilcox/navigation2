@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_robot_server/robot_server.hpp"
+#ifndef NAV2_PARAMETER_SERVER__PARAMETER_SERVER_HPP_
+#define NAV2_PARAMETER_SERVER__PARAMETER_SERVER_HPP_
+
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
+#include "nav2_util/node_utils.hpp"
 
-int main(int argc, char ** argv)
+namespace nav2_parameter_server
 {
-  rclcpp::init(argc, argv);
-  auto node = std::make_shared<nav2_robot_server::RobotServer>();
-  rclcpp::spin(node->get_node_base_interface());
-  rclcpp::shutdown();
 
-  return 0;
-}
+class ParameterServer : public rclcpp::Node
+{
+public:
+  explicit ParameterServer(const rclcpp::NodeOptions & options = nav2_util::get_node_options_default());
+  ~ParameterServer();
+};
+
+}  // namespace nav2_robot_server
+
+#endif  // NAV2_PARAMETER_SERVER__PARAMETER_SERVER_HPP_

@@ -100,6 +100,18 @@ nav2_util::CallbackReturn
 Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
+
+  parameter_client_ = std::make_shared<nav2_util::ParametersClient>(
+    shared_from_this(), "/parameter_server");
+
+  while (!parameter_client_->wait_for_service(1s)) {
+    if (!rclcpp::ok()) {
+      RCLCPP_ERROR(get_logger(), "Interrupted while waiting for the service. Exiting.");
+      return nav2_util::CallbackReturn::FAILURE;
+    }
+    RCLCPP_INFO(get_logger(), "service not available, waiting again...");
+  }
+
   getParameters();
 
   // Create the costmap itself
@@ -261,9 +273,12 @@ Costmap2DROS::getParameters()
 {
   RCLCPP_DEBUG(get_logger(), " getParameters");
 
+  // Get parameters from remote parameter server
+  footprint_ = parameter_client_->get_parameter<std::string>("footprint", "[]");
+  robot_radius_ = parameter_client_->get_parameter<double>("robot_radius", 0.1);
+
   // Get all of the required parameters
   get_parameter("always_send_full_costmap", always_send_full_costmap_);
-  get_parameter("footprint", footprint_);
   get_parameter("footprint_padding", footprint_padding_);
   get_parameter("global_frame", global_frame_);
   get_parameter("height", map_height_meters_);
@@ -274,7 +289,6 @@ Costmap2DROS::getParameters()
   get_parameter("publish_frequency", map_publish_frequency_);
   get_parameter("resolution", resolution_);
   get_parameter("robot_base_frame", robot_base_frame_);
-  get_parameter("robot_radius", robot_radius_);
   get_parameter("rolling_window", rolling_window_);
   get_parameter("track_unknown_space", track_unknown_space_);
   get_parameter("transform_tolerance", transform_tolerance_);

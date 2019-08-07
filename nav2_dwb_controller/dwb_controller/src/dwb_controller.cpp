@@ -39,7 +39,11 @@ DwbController::DwbController()
   costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>("local_costmap");
 
   // Create an executor that will be used to spin the costmap node
-  costmap_executor_ = std::make_unique<rclcpp::executors::SingleThreadedExecutor>();
+  const unsigned number_of_threads = 2;
+  const bool yield_thread_before_execute = false;
+
+  costmap_executor_ = std::make_unique<rclcpp::executors::MultiThreadedExecutor>(
+    rclcpp::executor::ExecutorArgs(), number_of_threads, yield_thread_before_execute);
 
   // Launch a thread to run the costmap node
   costmap_thread_ = std::make_unique<std::thread>(
