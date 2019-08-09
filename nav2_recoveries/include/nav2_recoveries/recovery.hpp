@@ -27,6 +27,7 @@
 #include "tf2_ros/create_timer_ros.h"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav2_costmap_2d/collision_checker.hpp"
+#include "nav2_util/parameters_client.hpp"
 #include "nav2_util/simple_action_server.hpp"
 #include "nav2_util/robot_utils.hpp"
 
@@ -90,9 +91,14 @@ protected:
   std::unique_ptr<nav2_costmap_2d::CollisionChecker> collision_checker_;
   double cycle_frequency_;
 
+  // Parameter client for remote blackboard parameters
+  std::shared_ptr<nav2_util::ParametersClient> parameter_client_;
+
   void configure()
   {
     RCLCPP_INFO(node_->get_logger(), "Configuring %s", recovery_name_.c_str());
+
+    parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
 
     std::string costmap_topic;
     std::string footprint_topic;

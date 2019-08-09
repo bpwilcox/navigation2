@@ -131,8 +131,6 @@ AmclNode::AmclNode()
   add_parameter("resample_interval", rclcpp::ParameterValue(1),
     "Number of filter updates required before resampling");
 
-  add_parameter("robot_model_type", rclcpp::ParameterValue(std::string("differential")));
-
   add_parameter("save_pose_rate", rclcpp::ParameterValue(0.5),
     "Maximum rate (Hz) at which to store the last estimated pose and covariance to the parameter "
     "server, in the variables ~initial_pose_* and ~initial_cov_*. This saved pose will be used "
@@ -170,6 +168,8 @@ nav2_util::CallbackReturn
 AmclNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
+
+  parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
 
   initParameters();
   initTransforms();
@@ -941,6 +941,9 @@ AmclNode::initParameters()
   double save_pose_rate;
   double tmp_tol;
 
+  robot_model_type_ = parameter_client_->get_parameter<std::string>(
+    "robot_model_type", "differential");
+
   get_parameter("alpha1", alpha1_);
   get_parameter("alpha2", alpha2_);
   get_parameter("alpha3", alpha3_);
@@ -966,7 +969,6 @@ AmclNode::initParameters()
   get_parameter("recovery_alpha_fast", alpha_fast_);
   get_parameter("recovery_alpha_slow", alpha_slow_);
   get_parameter("resample_interval", resample_interval_);
-  get_parameter("robot_model_type", robot_model_type_);
   get_parameter("save_pose_rate", save_pose_rate);
   get_parameter("sigma_hit", sigma_hit_);
   get_parameter("tf_broadcast", tf_broadcast_);

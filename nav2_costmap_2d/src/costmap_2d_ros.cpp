@@ -107,6 +107,9 @@ nav2_util::CallbackReturn
 Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
+
+  parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
+
   getParameters();
 
   // Create the costmap itself

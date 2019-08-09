@@ -50,43 +50,32 @@ KinematicParameters::KinematicParameters()
 {
 }
 
-void KinematicParameters::initialize(const nav2_util::LifecycleNode::SharedPtr & nh)
+void KinematicParameters::initialize(const nav2_util::LifecycleNode::SharedPtr & /* nh */)
 {
-  // Special handling for renamed parameters
-  moveDeprecatedParameter<double>(nh, "max_vel_theta", "max_rot_vel");
-  moveDeprecatedParameter<double>(nh, "min_speed_xy", "min_trans_vel");
-  moveDeprecatedParameter<double>(nh, "max_speed_xy", "max_trans_vel");
-  moveDeprecatedParameter<double>(nh, "min_speed_theta", "min_rot_vel");
 
-  nh->declare_parameter("min_vel_x", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("min_vel_y", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("max_vel_x", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("max_vel_y", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("max_vel_theta", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("min_speed_xy", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("max_speed_xy", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("min_speed_theta", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("acc_lim_x", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("acc_lim_y", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("acc_lim_theta", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("decel_lim_x", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("decel_lim_y", rclcpp::ParameterValue(0.0));
-  nh->declare_parameter("decel_lim_theta", rclcpp::ParameterValue(0.0));
+  parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
 
-  nh->get_parameter("min_vel_x", min_vel_x_);
-  nh->get_parameter("min_vel_y", min_vel_y_);
-  nh->get_parameter("max_vel_x", max_vel_x_);
-  nh->get_parameter("max_vel_y", max_vel_y_);
-  nh->get_parameter("max_vel_theta", max_vel_theta_);
-  nh->get_parameter("min_speed_xy", min_speed_xy_);
-  nh->get_parameter("max_speed_xy", max_speed_xy_);
-  nh->get_parameter("min_speed_theta", min_speed_theta_);
-  nh->get_parameter("acc_lim_x", acc_lim_x_);
-  nh->get_parameter("acc_lim_y", acc_lim_y_);
-  nh->get_parameter("acc_lim_theta", acc_lim_theta_);
-  nh->get_parameter("decel_lim_x", decel_lim_x_);
-  nh->get_parameter("decel_lim_y", decel_lim_y_);
-  nh->get_parameter("decel_lim_theta", decel_lim_theta_);
+  // TODO(bpwilcox): Support deprecated parameters with parameter client?
+  // // Special handling for renamed parameters
+  // moveDeprecatedParameter<double>(nh, "max_vel_theta", "max_rot_vel");
+  // moveDeprecatedParameter<double>(nh, "min_speed_xy", "min_trans_vel");
+  // moveDeprecatedParameter<double>(nh, "max_speed_xy", "max_trans_vel");
+  // moveDeprecatedParameter<double>(nh, "min_speed_theta", "min_rot_vel");
+
+  min_vel_x_ = parameter_client_->get_parameter<double>("min_vel_x", 0.0);
+  min_vel_y_ = parameter_client_->get_parameter<double>("min_vel_y", 0.0);
+  max_vel_x_ = parameter_client_->get_parameter<double>("max_vel_x", 0.0);
+  max_vel_y_ = parameter_client_->get_parameter<double>("max_vel_y", 0.0);
+  max_vel_theta_ = parameter_client_->get_parameter<double>("max_vel_theta", 0.0);
+  min_speed_xy_ = parameter_client_->get_parameter<double>("min_speed_xy", 0.0);
+  max_speed_xy_ = parameter_client_->get_parameter<double>("max_speed_xy", 0.0);
+  min_speed_theta_ = parameter_client_->get_parameter<double>("min_speed_theta", 0.0);
+  acc_lim_x_ = parameter_client_->get_parameter<double>("acc_lim_x", 0.0);
+  acc_lim_y_ = parameter_client_->get_parameter<double>("acc_lim_y", 0.0);
+  acc_lim_theta_ = parameter_client_->get_parameter<double>("acc_lim_theta", 0.0);
+  decel_lim_x_ = parameter_client_->get_parameter<double>("decel_lim_x", 0.0);
+  decel_lim_y_ = parameter_client_->get_parameter<double>("decel_lim_y", 0.0);
+  decel_lim_theta_ = parameter_client_->get_parameter<double>("decel_lim_theta", 0.0);
 
   min_speed_xy_sq_ = min_speed_xy_ * min_speed_xy_;
   max_speed_xy_sq_ = max_speed_xy_ * max_speed_xy_;

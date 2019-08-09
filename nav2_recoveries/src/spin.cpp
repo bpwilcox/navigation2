@@ -35,10 +35,10 @@ namespace nav2_recoveries
 Spin::Spin(rclcpp::Node::SharedPtr & node, std::shared_ptr<tf2_ros::Buffer> tf)
 : Recovery<SpinAction>(node, "Spin", tf)
 {
-  // TODO(orduno) #378 Pull values from the robot
-  max_rotational_vel_ = 1.0;
-  min_rotational_vel_ = 0.4;
-  rotational_acc_lim_ = 3.2;
+  max_rotational_vel_ = parameter_client_->get_parameter<double>("max_vel_theta", 1.0);
+  min_rotational_vel_ = parameter_client_->get_parameter<double>("min_in_place_vel_theta", 0.4);
+  rotational_acc_lim_ = parameter_client_->get_parameter<double>("acc_lim_theta", 3.2);
+
   initial_yaw_ = 0.0;
   simulate_ahead_time_ = 2.0;
 }

@@ -39,6 +39,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_util/lifecycle_node.hpp"
+#include "nav2_util/parameters_client.hpp"
 
 namespace dwb_plugins
 {
@@ -111,6 +112,9 @@ protected:
   // Cached square values of min_speed_xy and max_speed_xy
   double min_speed_xy_sq_{0};
   double max_speed_xy_sq_{0};
+
+  // Parameter client for remote blackboard parameters
+  std::shared_ptr<nav2_util::ParametersClient> parameter_client_;
 
   void reconfigureCB();
 };
