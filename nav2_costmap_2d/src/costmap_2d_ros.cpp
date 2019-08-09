@@ -74,7 +74,6 @@ Costmap2DROS::Costmap2DROS(const std::string & name, const std::string & absolut
 
   declare_parameter("always_send_full_costmap", rclcpp::ParameterValue(false));
   declare_parameter("footprint_padding", rclcpp::ParameterValue(0.01f));
-  declare_parameter("footprint", rclcpp::ParameterValue(std::string("[]")));
   declare_parameter("global_frame", rclcpp::ParameterValue(std::string("map")));
   declare_parameter("height", rclcpp::ParameterValue(10));
   declare_parameter("lethal_cost_threshold", rclcpp::ParameterValue(100));
@@ -87,7 +86,6 @@ Costmap2DROS::Costmap2DROS(const std::string & name, const std::string & absolut
   declare_parameter("publish_frequency", rclcpp::ParameterValue(1.0));
   declare_parameter("resolution", rclcpp::ParameterValue(0.1));
   declare_parameter("robot_base_frame", rclcpp::ParameterValue(std::string("base_link")));
-  declare_parameter("robot_radius", rclcpp::ParameterValue(0.1));
   declare_parameter("rolling_window", rclcpp::ParameterValue(false));
   declare_parameter("track_unknown_space", rclcpp::ParameterValue(false));
   declare_parameter("transform_tolerance", rclcpp::ParameterValue(0.3));
@@ -269,11 +267,13 @@ Costmap2DROS::on_shutdown(const rclcpp_lifecycle::State &)
 void
 Costmap2DROS::getParameters()
 {
-  RCLCPP_DEBUG(get_logger(), " getParameters");
+  RCLCPP_DEBUG(get_logger(), "getParameters");
+
+  footprint_ = parameter_client_->get_parameter<std::string>("footprint", "[]");
+  robot_radius_ = parameter_client_->get_parameter<double>("robot_radius", 0.1);
 
   // Get all of the required parameters
   get_parameter("always_send_full_costmap", always_send_full_costmap_);
-  get_parameter("footprint", footprint_);
   get_parameter("footprint_padding", footprint_padding_);
   get_parameter("global_frame", global_frame_);
   get_parameter("height", map_height_meters_);
@@ -284,7 +284,6 @@ Costmap2DROS::getParameters()
   get_parameter("publish_frequency", map_publish_frequency_);
   get_parameter("resolution", resolution_);
   get_parameter("robot_base_frame", robot_base_frame_);
-  get_parameter("robot_radius", robot_radius_);
   get_parameter("rolling_window", rolling_window_);
   get_parameter("track_unknown_space", track_unknown_space_);
   get_parameter("transform_tolerance", transform_tolerance_);
