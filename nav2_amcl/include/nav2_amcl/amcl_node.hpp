@@ -34,7 +34,6 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/motion_model/motion_model.hpp"
 #include "nav2_util/sensors/laser/laser.hpp"
-#include "nav2_util/parameters_client.hpp"
 #include "nav_msgs/srv/set_map.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 #include "std_srvs/srv/empty.hpp"
@@ -95,8 +94,9 @@ protected:
   static std::vector<std::pair<int, int>> free_space_indices;
 #endif
 
-  // Parameter client for remote blackboard parameters
-  std::shared_ptr<nav2_util::ParametersClient> parameter_client_;
+  // Parameter client for remote parameter blackboard
+  rclcpp::Node::SharedPtr param_client_node_;
+  std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
 
   // Transforms
   void initTransforms();

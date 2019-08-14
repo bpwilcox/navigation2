@@ -39,10 +39,12 @@
 #include <string>
 
 #include "nav_2d_utils/parameters.hpp"
+#include "nav2_util/node_utils.hpp"
 
 using std::fabs;
-
+using namespace std::chrono_literals;
 using nav_2d_utils::moveDeprecatedParameter;
+
 namespace dwb_plugins
 {
 
@@ -50,10 +52,22 @@ KinematicParameters::KinematicParameters()
 {
 }
 
-void KinematicParameters::initialize(const nav2_util::LifecycleNode::SharedPtr & /* nh */)
+void KinematicParameters::initialize(const nav2_util::LifecycleNode::SharedPtr & nh)
 {
 
-  parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
+  std::string remote_node_name = "/parameter_blackboard";
+  param_client_node_ = nav2_util::generate_internal_node(nh->get_name() + std::string("_param_client_Node"));
+  parameter_client_ = std::make_shared<rclcpp::SyncParametersClient>(param_client_node_, remote_node_name);
+
+  while (!parameter_client_->wait_for_service(1s)) {
+    if (!rclcpp::ok()) {
+      throw std::runtime_error(
+        "parameter client: interrupted while waiting for parameter server");
+    }
+    RCLCPP_INFO(
+      nh->get_logger(), "parameter client: waiting for parameter server '%s'",
+      remote_node_name.c_str());
+  }
 
   // TODO(bpwilcox): Support deprecated parameters with parameter client?
   // // Special handling for renamed parameters

@@ -39,7 +39,6 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/parameters_client.hpp"
 
 namespace dwb_plugins
 {
@@ -113,8 +112,9 @@ protected:
   double min_speed_xy_sq_{0};
   double max_speed_xy_sq_{0};
 
-  // Parameter client for remote blackboard parameters
-  std::shared_ptr<nav2_util::ParametersClient> parameter_client_;
+  // Parameter client for remote parameter blackboard
+  rclcpp::Node::SharedPtr param_client_node_;
+  std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
 
   void reconfigureCB();
 };

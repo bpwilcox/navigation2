@@ -27,9 +27,9 @@
 #include "tf2_ros/create_timer_ros.h"
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav2_costmap_2d/collision_checker.hpp"
-#include "nav2_util/parameters_client.hpp"
 #include "nav2_util/simple_action_server.hpp"
 #include "nav2_util/robot_utils.hpp"
+#include "nav2_util/node_utils.hpp"
 
 namespace nav2_recoveries
 {
@@ -91,14 +91,27 @@ protected:
   std::unique_ptr<nav2_costmap_2d::CollisionChecker> collision_checker_;
   double cycle_frequency_;
 
-  // Parameter client for remote blackboard parameters
-  std::shared_ptr<nav2_util::ParametersClient> parameter_client_;
+  // Parameter client for remote parameter blackboard
+  rclcpp::Node::SharedPtr param_client_node_;
+  std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
 
   void configure()
   {
     RCLCPP_INFO(node_->get_logger(), "Configuring %s", recovery_name_.c_str());
 
-    parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
+    std::string remote_node_name = "/parameter_blackboard";
+    param_client_node_ = nav2_util::generate_internal_node(node_->get_name() + std::string("_param_client_Node"));
+    parameter_client_ = std::make_shared<rclcpp::SyncParametersClient>(param_client_node_, remote_node_name);
+
+    while (!parameter_client_->wait_for_service(1s)) {
+      if (!rclcpp::ok()) {
+        throw std::runtime_error(
+          "parameter client: interrupted while waiting for parameter server");
+      }
+      RCLCPP_INFO(
+        node_->get_logger(), "parameter client: waiting for parameter server '%s'",
+        remote_node_name.c_str());
+    }
 
     std::string costmap_topic;
     std::string footprint_topic;

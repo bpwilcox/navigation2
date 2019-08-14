@@ -45,6 +45,7 @@
 #include "nav2_costmap_2d/layered_costmap.hpp"
 #include "nav2_util/duration_conversions.hpp"
 #include "nav2_util/execution_timer.hpp"
+#include "nav2_util/node_utils.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "tf2_ros/create_timer_ros.h"
 #include "nav2_util/robot_utils.hpp"
@@ -106,7 +107,19 @@ Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
 
-  parameter_client_= std::make_shared<nav2_util::ParametersClient>("/parameter_blackboard");
+  std::string remote_node_name = "/parameter_blackboard";
+  param_client_node_ = nav2_util::generate_internal_node(get_name() + std::string("_param_client_Node"));
+  parameter_client_ = std::make_shared<rclcpp::SyncParametersClient>(param_client_node_, remote_node_name);
+
+  while (!parameter_client_->wait_for_service(1s)) {
+    if (!rclcpp::ok()) {
+      throw std::runtime_error(
+        "parameter client: interrupted while waiting for parameter server");
+    }
+    RCLCPP_INFO(
+      get_logger(), "parameter client: waiting for parameter server '%s'",
+      remote_node_name.c_str());
+  }
 
   getParameters();
 

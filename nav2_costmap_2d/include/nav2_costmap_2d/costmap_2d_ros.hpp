@@ -50,7 +50,6 @@
 #include "nav2_costmap_2d/layered_costmap.hpp"
 #include "nav2_costmap_2d/layer.hpp"
 #include "nav2_util/lifecycle_node.hpp"
-#include "nav2_util/parameters_client.hpp"
 #include "pluginlib/class_loader.hpp"
 #include "tf2/convert.h"
 #include "tf2/LinearMath/Transform.h"
@@ -301,8 +300,9 @@ protected:
 
   std::unique_ptr<ClearCostmapService> clear_costmap_service_;
 
-  // Parameter client for remote blackboard parameters
-  std::shared_ptr<nav2_util::ParametersClient> parameter_client_;
+  // Parameter client for remote parameter blackboard
+  rclcpp::Node::SharedPtr param_client_node_;
+  std::shared_ptr<rclcpp::SyncParametersClient> parameter_client_;
 };
 
 }  // namespace nav2_costmap_2d
