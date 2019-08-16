@@ -45,4 +45,25 @@ Tokens split(const string & tokenstring, char delimiter)
   return tokens;
 }
 
+std::pair<std::string, std::string> split_path(const std::string & str)
+{
+  std::size_t found = str.find_last_of("/\\");
+  std::string path = str.substr(0, found);
+  std::string name = str.substr(found + 1);
+  return {path, name};
+}
+
+std::string join_path(std::string path, std::string name)
+{
+  std::string joined_path = path;
+  if (*joined_path.rbegin() != '/' && *name.begin() != '/') {
+    joined_path = joined_path + "/";
+  }
+  if (*joined_path.begin() != '/') {
+    joined_path = "/" + joined_path;
+  }
+  joined_path = joined_path + name;
+  return joined_path;
+}
+
 }  // namespace nav2_util

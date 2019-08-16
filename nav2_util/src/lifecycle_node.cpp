@@ -62,6 +62,12 @@ LifecycleNode::LifecycleNode(
       },
       rclcpp_node_);
   }
+
+  ParamSubscriber = std::make_shared<ParamEventSubscriber>(
+    get_node_base_interface(),
+    get_node_topics_interface(),
+    get_node_logging_interface()
+  );
 }
 
 LifecycleNode::~LifecycleNode()

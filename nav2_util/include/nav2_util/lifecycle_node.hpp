@@ -20,8 +20,10 @@
 #include <thread>
 
 #include "nav2_util/lifecycle_helper_interface.hpp"
+#include "nav2_util/param_event_subscriber.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/parameter_events_filter.hpp"
 
 namespace nav2_util
 {
@@ -113,6 +115,20 @@ public:
     declare_parameter(descriptor.name, default_value, descriptor);
   }
 
+  template <typename ParameterT>
+  void register_param_update(
+    const std::string & parameter_name, ParameterT & parameter, const std::string node_name = "")
+  {
+    ParamSubscriber->register_param_update<ParameterT>(parameter_name, parameter, node_name);
+  }
+
+  void set_parameters_callback(
+    std::function<void(const rcl_interfaces::msg::ParameterEvent::SharedPtr &)> callback,
+    const std::string & node_namespace)
+  {
+    ParamSubscriber->set_event_callback(callback, node_namespace);
+  }
+
 protected:
   // Whether or not to create a local rclcpp::Node which can be used for ROS2 classes that don't
   // yet support lifecycle nodes
@@ -120,6 +136,8 @@ protected:
 
   // The local node
   rclcpp::Node::SharedPtr rclcpp_node_;
+
+  std::shared_ptr<ParamEventSubscriber> ParamSubscriber;
 
   // When creating a local node, this class will launch a separate thread created to spin the node
   std::unique_ptr<std::thread> rclcpp_thread_;

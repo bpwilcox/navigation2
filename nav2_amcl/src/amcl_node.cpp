@@ -159,6 +159,8 @@ AmclNode::AmclNode()
   add_parameter("z_max", rclcpp::ParameterValue(0.05));
   add_parameter("z_rand", rclcpp::ParameterValue(0.5));
   add_parameter("z_short", rclcpp::ParameterValue(0.05));
+
+  register_param_update("alpha1", alpha1_);
 }
 
 AmclNode::~AmclNode()
@@ -170,8 +172,11 @@ nav2_util::CallbackReturn
 AmclNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   RCLCPP_INFO(get_logger(), "Configuring");
+  RCLCPP_INFO(get_logger(), "Current Value of alpha1 before init: %f", alpha1_);
 
   initParameters();
+  RCLCPP_INFO(get_logger(), "Current Value of alpha1 after param init: %f", alpha1_);
+
   initTransforms();
   initMessageFilters();
   initPubSub();

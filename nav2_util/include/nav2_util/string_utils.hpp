@@ -28,6 +28,10 @@ std::string strip_leading_slash(const std::string & in);
 /// Split a string at the delimiters
 Tokens split(const std::string & tokenstring, char delimiter);
 
+std::pair<std::string, std::string> split_path(const std::string & str);
+
+std::string join_path(std::string path, std::string name);
+
 }  // namespace nav2_util
 
 #endif  // NAV2_UTIL__STRING_UTILS_HPP_
