@@ -28,7 +28,8 @@ ParamEventSubscriber::ParamEventSubscriber(
 : node_base_(node_base),
   node_topics_(node_topics),
   node_logging_(node_logging),
-  qos_(qos)
+  qos_(qos),
+  last_event_(std::make_shared<rcl_interfaces::msg::ParameterEvent>())
 {}
 
 // Adds a subscription to a namespace parameter events topic
@@ -51,15 +52,32 @@ void ParamEventSubscriber::set_event_callback(
   std::function<void(const rcl_interfaces::msg::ParameterEvent::SharedPtr &)> callback,
   const std::string & node_namespace)
 {
-  auto full_namespace = resolve_node_path(node_namespace);
+  std::string full_namespace;
+  if (node_namespace == "")
+  {
+    full_namespace = node_base_->get_namespace();
+  }
+
+  full_namespace = resolve_node_path(full_namespace);
   add_namespace_event_subscriber(full_namespace);  
   user_callback_ = callback;
+}
+
+void ParamEventSubscriber::register_param_callback(
+  const std::string & parameter_name,
+  std::function<void()> callback,
+  const std::string & node_name)
+{
+  auto full_node_name = resolve_node_path(node_name);
+  add_namespace_event_subscriber(split_path(full_node_name).first);
+  param_node_map_[parameter_name] = full_node_name;
+  param_callbacks_[parameter_name] = callback;  
 }
 
 void ParamEventSubscriber::event_callback(const rcl_interfaces::msg::ParameterEvent::SharedPtr event)
 {
   std::string node_name = event->node;
-  RCLCPP_INFO(node_logging_->get_logger(), "Parameter event received for node: %s", node_name.c_str());
+  RCLCPP_DEBUG(node_logging_->get_logger(), "Parameter event received for node: %s", node_name.c_str());
 
   last_event_ = event;
 
@@ -67,7 +85,12 @@ void ParamEventSubscriber::event_callback(const rcl_interfaces::msg::ParameterEv
     it != param_node_map_.end(); ++it)
   {
     if (node_name == it->second) {
-      param_callbacks_[it->first](it->first);
+      rclcpp::ParameterEventsFilter filter(event, {it->first},
+        {rclcpp::ParameterEventsFilter::EventType::NEW,
+          rclcpp::ParameterEventsFilter::EventType::CHANGED});
+      if (!filter.get_events().empty()) {
+        param_callbacks_[it->first]();
+      }
     }
   }
 
@@ -79,6 +102,7 @@ void ParamEventSubscriber::event_callback(const rcl_interfaces::msg::ParameterEv
 std::string ParamEventSubscriber::resolve_node_path(const std::string & node_name)
 {
   std::string full_path;
+
   if (node_name == "") {
     full_path = node_base_->get_fully_qualified_name();
   } else {
@@ -87,7 +111,7 @@ std::string ParamEventSubscriber::resolve_node_path(const std::string & node_nam
       full_path = '/' + full_path;
     }
   }
-
+  
   return full_path;
 }
 

@@ -161,6 +161,17 @@ AmclNode::AmclNode()
   add_parameter("z_short", rclcpp::ParameterValue(0.05));
 
   register_param_update("alpha1", alpha1_);
+  auto cb = [this]() 
+    {
+      RCLCPP_INFO(get_logger(), "alpha2 has changed!");
+      ParamSubscriber->get_param_update("alpha2", alpha2_);
+    };
+  register_param_callback("alpha2", cb);
+  set_parameters_callback(
+    [this](const rcl_interfaces::msg::ParameterEvent::SharedPtr & event)
+    {
+      RCLCPP_INFO(get_logger(), "product of node %s: %f", event->node.c_str(), alpha1_*alpha2_);
+    });
 }
 
 AmclNode::~AmclNode()

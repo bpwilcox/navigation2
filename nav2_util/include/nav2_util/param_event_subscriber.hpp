@@ -36,34 +36,25 @@ public:
   // Sets user callback as a member variable.
   void set_event_callback(
     std::function<void(const rcl_interfaces::msg::ParameterEvent::SharedPtr &)> callback,
-    const std::string & node_namespace);
+    const std::string & node_namespace = "");
 
   template <typename ParameterT>
   void register_param_update(
     const std::string & parameter_name, ParameterT & parameter, const std::string & node_name = "")
   {
-
-    auto full_node_name = resolve_node_path(node_name);
-
-    add_namespace_event_subscriber(split_path(full_node_name).first);
-
-    param_node_map_[parameter_name] = full_node_name;
-
-    param_callbacks_[parameter_name] = 
-      [&parameter, this](const std::string & parameter_name) {
+    auto callback = 
+      [parameter_name, &parameter, this]() {
         get_param_update<ParameterT>(parameter_name, parameter);
       };
+
+    register_param_callback(parameter_name, callback, node_name);
   }
 
-protected:
+void register_param_callback(
+  const std::string & parameter_name,
+  std::function<void()> callback,
+  const std::string & node_name = "");
 
-  // Adds a subscription to a namespace parameter events topic
-  void add_namespace_event_subscriber(const std::string & node_namespace);
-
-  void event_callback(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
-
-  std::string resolve_node_path(const std::string & path);
-  
   template <typename ParameterT>
   void get_param_update(const std::string & parameter_name, ParameterT & value)
   {
@@ -78,6 +69,15 @@ protected:
     }
   }
 
+protected:
+
+  // Adds a subscription to a namespace parameter events topic
+  void add_namespace_event_subscriber(const std::string & node_namespace);
+
+  void event_callback(const rcl_interfaces::msg::ParameterEvent::SharedPtr event);
+
+  std::string resolve_node_path(const std::string & path);
+  
   // Interfaces used for logging and creating subscribers  
   rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base_;
   rclcpp::node_interfaces::NodeTopicsInterface::SharedPtr node_topics_;
@@ -86,7 +86,7 @@ protected:
   rclcpp::QoS qos_;
 
   std::map<std::string, std::string> param_node_map_;
-  std::map<std::string, std::function<void(const std::string &)>> param_callbacks_;
+  std::map<std::string, std::function<void()>> param_callbacks_;
 
   // Vector of unique namespaces added
   std::vector<std::string> node_namespaces_;

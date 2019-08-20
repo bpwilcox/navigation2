@@ -124,9 +124,17 @@ public:
 
   void set_parameters_callback(
     std::function<void(const rcl_interfaces::msg::ParameterEvent::SharedPtr &)> callback,
-    const std::string & node_namespace)
+    const std::string & node_namespace = "")
   {
     ParamSubscriber->set_event_callback(callback, node_namespace);
+  }
+
+  void register_param_callback(
+    const std::string & parameter_name,
+    std::function<void()> callback,
+    const std::string & node_name = "")
+  {
+    ParamSubscriber->register_param_callback(parameter_name, callback, node_name);
   }
 
 protected:

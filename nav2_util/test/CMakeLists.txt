@@ -24,3 +24,7 @@ target_link_libraries(test_actions ${library_name})
 ament_add_gtest(test_lifecycle_node test_lifecycle_node.cpp)
 ament_target_dependencies(test_lifecycle_node rclcpp_lifecycle)
 target_link_libraries(test_lifecycle_node ${library_name})
+
+ament_add_gtest(test_param_event_subscriber test_param_event_subscriber.cpp)
+ament_target_dependencies(test_param_event_subscriber rclcpp)
+target_link_libraries(test_param_event_subscriber ${library_name})

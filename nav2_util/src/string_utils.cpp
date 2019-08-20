@@ -48,7 +48,7 @@ Tokens split(const string & tokenstring, char delimiter)
 std::pair<std::string, std::string> split_path(const std::string & str)
 {
   std::size_t found = str.find_last_of("/\\");
-  std::string path = str.substr(0, found);
+  std::string path = str.substr(0, found + 1);
   std::string name = str.substr(found + 1);
   return {path, name};
 }
