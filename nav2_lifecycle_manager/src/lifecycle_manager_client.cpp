@@ -80,12 +80,6 @@ bool LifecycleManagerClient::is_active()
   RCLCPP_INFO(node_->get_logger(), "Waiting for the lifecycle_manager's %s service...",
     service_name);
 
-  // // Non-blocking. If service unavailable, return false
-  // if (!is_active_client_->wait_for_service(std::chrono::milliseconds(500))) {
-  //   RCLCPP_WARN(node_->get_logger(), "Client not yet available...");
-  //   return false;
-  // }
-
   while (!is_active_client_->wait_for_service(std::chrono::seconds(1))) {
     if (!rclcpp::ok()) {
       RCLCPP_ERROR(node_->get_logger(), "Client interrupted while waiting for service to appear");

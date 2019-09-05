@@ -41,7 +41,7 @@ public:
   bool resume();
   bool reset();
   bool is_active();
-  
+
   // A couple convenience methods to facilitate scripting tests
   void set_initial_pose(double x, double y, double theta);
   bool navigate_to_pose(double x, double y, double theta);
