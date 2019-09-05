@@ -44,10 +44,16 @@ Nav2Panel::Nav2Panel(QWidget * parent)
   const char * shutdown_msg = "Deactivate, cleanup, and shutdown all nav2 lifecycle nodes";
   const char * cancel_msg = "Cancel navigation";
 
+  pre_initial_ = new QState();
+  pre_initial_->setObjectName("pre_initial");
+  pre_initial_->assignProperty(start_stop_button_, "text", "Startup");
+  pre_initial_->assignProperty(start_stop_button_, "enabled", false);
+
   initial_ = new QState();
   initial_->setObjectName("initial");
   initial_->assignProperty(start_stop_button_, "text", "Startup");
   initial_->assignProperty(start_stop_button_, "toolTip", startup_msg);
+  initial_->assignProperty(start_stop_button_, "enabled", true);
 
   starting_ = new QState();
   starting_->setObjectName("starting");
@@ -65,6 +71,7 @@ Nav2Panel::Nav2Panel(QWidget * parent)
   completed_->setObjectName("succesful");
   completed_->assignProperty(start_stop_button_, "text", "Shutdown");
   completed_->assignProperty(start_stop_button_, "toolTip", shutdown_msg);
+  completed_->assignProperty(start_stop_button_, "enabled", true);
 
   // State entered while the NavigateToPose action is active
   running_ = new QState();
@@ -102,6 +109,18 @@ Nav2Panel::Nav2Panel(QWidget * parent)
   completedTransition->setTargetState(running_);
   completed_->addTransition(completedTransition);
 
+  InitialThread * initialThread = new InitialThread(client_);
+  connect(initialThread, &InitialThread::finished, initialThread, &QObject::deleteLater);
+
+  QSignalTransition * activeSignal = new QSignalTransition(initialThread, &InitialThread::activeSystem);
+  activeSignal->setTargetState(completed_);
+  pre_initial_->addTransition(activeSignal);
+
+  QSignalTransition * inactiveSignal = new QSignalTransition(initialThread, &InitialThread::inactiveSystem);
+  inactiveSignal->setTargetState(initial_);
+  pre_initial_->addTransition(inactiveSignal);
+
+  state_machine_.addState(pre_initial_);
   state_machine_.addState(initial_);
   state_machine_.addState(starting_);
   state_machine_.addState(stopping_);
@@ -109,7 +128,7 @@ Nav2Panel::Nav2Panel(QWidget * parent)
   state_machine_.addState(canceled_);
   state_machine_.addState(completed_);
 
-  state_machine_.setInitialState(initial_);
+  state_machine_.setInitialState(pre_initial_);
   state_machine_.start();
 
   // Lay out the items in the panel
@@ -128,6 +147,8 @@ Nav2Panel::Nav2Panel(QWidget * parent)
 
   QObject::connect(&GoalUpdater, SIGNAL(updateGoal(double,double,double,QString)),  // NOLINT
     this, SLOT(onNewGoal(double,double,double,QString)));  // NOLINT
+
+  initialThread->start();
 }
 
 Nav2Panel::~Nav2Panel()

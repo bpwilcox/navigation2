@@ -52,6 +52,9 @@ LifecycleManager::LifecycleManager()
   manager_srv_ = create_service<ManageNodes>("lifecycle_manager/manage_nodes",
       std::bind(&LifecycleManager::managerCallback, this, _1, _2, _3));
 
+  is_active_srv_ = create_service<std_srvs::srv::Trigger>("lifecycle_manager/is_active",
+      std::bind(&LifecycleManager::activeCallback, this, _1, _2, _3));
+
   auto options = rclcpp::NodeOptions().arguments(
     {"--ros-args", std::string("__node:=") + get_name() + "service_client", "--"});
   service_client_node_ = std::make_shared<rclcpp::Node>("_", options);
@@ -105,6 +108,15 @@ LifecycleManager::managerCallback(
       response->success = resume();
       break;
   }
+}
+
+void
+LifecycleManager::activeCallback(
+  const std::shared_ptr<rmw_request_id_t>/*request_header*/,
+  const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
+  std::shared_ptr<std_srvs::srv::Trigger::Response> response)
+{
+  response->success = system_active_;
 }
 
 void
@@ -181,6 +193,7 @@ LifecycleManager::startup()
     return false;
   }
   message("The system is active");
+  system_active_ = true;
   return true;
 }
 
@@ -191,6 +204,7 @@ LifecycleManager::shutdown()
   shutdownAllNodes();
   destroyLifecycleServiceClients();
   message("The system has been sucessfully shut down");
+  system_active_ = false;
   return true;
 }
 
@@ -205,6 +219,7 @@ LifecycleManager::reset()
     return false;
   }
   message("The system is reset");
+  system_active_ = false;
   return true;
 }
 
@@ -217,6 +232,7 @@ LifecycleManager::pause()
     return false;
   }
   message("The system is paused");
+  system_active_ = false;
   return true;
 }
 
@@ -229,6 +245,7 @@ LifecycleManager::resume()
     return false;
   }
   message("The system is active");
+  system_active_ = true;
   return true;
 }
 

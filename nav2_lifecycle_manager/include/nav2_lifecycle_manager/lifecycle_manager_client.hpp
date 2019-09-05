@@ -23,7 +23,7 @@
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "std_srvs/srv/empty.hpp"
+#include "std_srvs/srv/trigger.hpp"
 #include "nav2_msgs/srv/manage_nodes.hpp"
 
 namespace nav2_lifecycle_manager
@@ -40,7 +40,8 @@ public:
   bool pause();
   bool resume();
   bool reset();
-
+  bool is_active();
+  
   // A couple convenience methods to facilitate scripting tests
   void set_initial_pose(double x, double y, double theta);
   bool navigate_to_pose(double x, double y, double theta);
@@ -55,6 +56,8 @@ protected:
   rclcpp::Node::SharedPtr node_;
 
   rclcpp::Client<ManageNodes>::SharedPtr manager_client_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr is_active_client_;
+
   std::string service_name_{"lifecycle_manager/manage_nodes"};
 
   using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
